@@ -26,22 +26,35 @@ function getText() {
 }
 
 function addTextToScreen() {
+    document.getElementById("text__tag").innerHTML = ""; //Reseting the text to nothing
+    
     for(let i = 0; i < textArray.length; i++) {
-        if(inGame) { //If the element exists remove the old one
-            let removeElement = document.getElementById("texts");
-            removeElement.remove();
-        }
-
-        let tempElement = document.createElement("p");
-        let textNode = document.createTextNode(textArray[i]);
+        let tempElement = document.createElement("span");
+        tempElement.innerText = textArray[i];
+        tempElement.classList.add('incorrect');
         tempElement.setAttribute("id", "texts");
-        tempElement.appendChild(textNode);
 
-        
-
-        let element = document.getElementById("text__sec");
-        element.appendChild(tempElement);
-
-        
+        let textTag = document.getElementById('text__tag');
+        textTag.appendChild(tempElement);
     }
 }
+
+const inputField = document.getElementById('quoteInput')
+inputField.addEventListener('input', () => {
+    const spanArray = document.querySelectorAll("span");
+    console.log("even handler");
+
+    for(let i = 0; i < textArray.length; i++) {
+        if(inputField.value.charAt(i) === textArray[i]) {
+            //Correct
+            spanArray[i].classList.remove("incorrect");
+            spanArray[i].classList.remove("normal");
+            spanArray[i].classList.add("correct");
+        } else {
+            //Incorrect
+            spanArray[i].classList.remove("correct");
+            spanArray[i].classList.remove("normal");
+            spanArray[i].classList.add("incorrect");
+        }
+    }
+});
