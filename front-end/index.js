@@ -1,5 +1,5 @@
 //Variables
-const QUOTE_API_URL = 'http://api.quotable.io/random' // put your api here max
+const QUOTE_API_URL = 'http://127.0.0.1:4000/api/v1/text' // put your api here max
 const quoteDisplayElement = document.getElementById('quoteDisplay')
 const quoteInputElement = document.getElementById('quoteInput')
 const timerElement = document.getElementById('timer')
@@ -33,15 +33,22 @@ quoteInputElement.addEventListener('input', () =>{
     if (correct) renderNewQuote()
 })
 
+//Function added so called when start button is clicked
+function getText() {
+    console.log("Starting Game");
+}
+
 
 function getTextQuote(){
     return fetch (QUOTE_API_URL)
     .then(response => response.json())
-    .then(data => data.content)
+    .then(data => data.text)
 }
 
 async function renderNewQuote(){
     const quote = await getTextQuote()
+    console.log(quote);
+
     quoteDisplayElement.innerText = ''
     quote.split('').forEach(character => { //splitting up each character into a span, meaning induvidual colours
         const characterSpan = document.createElement('span')
@@ -103,7 +110,7 @@ Funtion getText() will send an API request to the backend to recieve a random sn
 //     }
 // }
 
-// const inputField = document.getElementById('quoteInput')
+// const inputFiel.getElementById('quoteInput')
 // inputField.addEventListener('input', () => {
 //     const spanArray = document.querySelectorAll("span");
 //     console.log("even handler");
