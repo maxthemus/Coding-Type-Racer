@@ -22,8 +22,10 @@ app.get(`${BASE_PATH}/text`, (req, res) => {
     console.log("got REQ");
     let text = texts[Math.floor(Math.random() * texts.length)];
     res.send({
-        text: text
+        text: text.toString()
     });
+
+    console.log(text);
 });
 
 
