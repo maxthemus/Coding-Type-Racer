@@ -22,6 +22,9 @@ const key = fs.readFileSync("../../Authentication/secret.key", "utf-8").trim();
 //JSON web tokens
 const jwt = require("jsonwebtoken");
 
+//UUID v4 for userId
+const uuid = require("uuid");
+
 
 
 //#TEMP VARIABLES TO REPLICATE DB
@@ -71,7 +74,70 @@ app.post(PATH+"/login", (req, res) => {
     //Error occur so we send back a invalid payload
     res.status(400).send({
         loggedIn: false,
-        error: "Invalid payload",
+        error: "Invalid Payload",
+    });
+});
+
+
+
+/**
+ * END POINT for signing up users
+ * Logic for signup:
+ * - validate payload   
+ * - Validate password
+ * - IF [username is NOT taken]
+ *      THEN create user
+ *      ELSE create response with failed user creation and "Password doesn't meet requirements"
+ *   ELSE send response saying "username taken"
+ */
+app.post(PATH+"/signup", (req, res) => {
+    if(req.body != undefined) {
+        let validPayload = validateSignUpPayload(req.body);
+        
+        if(validPayload) {
+            let validPassword = validatePassword(req.body.password);
+
+            if(validPassword) {
+                let usernameTaken = checkUsernameTaken(req.body.username);
+
+                if(!usernameTaken) {
+                    let userCreated = signUpUser(req.body);
+
+                    if(userCreated) {
+                        res.status(200).send({
+                            signedUp: true
+                        });
+                        return;
+                    }
+                    res.status(500).send({
+                        userCreated: false,
+                        validPassword: true,
+                        usernameTaken: true,
+                        error: "Error creating user"
+                    });
+                    return;                
+                }
+
+                res.status(409).send({
+                    signedUp: false,
+                    validPassword: true,
+                    usernameTaken: true,
+                    error: "Username is taken" 
+                });
+                return;
+            }
+            res.status(400).send({
+                signedUp: false,
+                validPassword: false,
+                error: "Invalid Password"
+            });
+        }
+    } 
+    
+    //Error occur so we send back a invalid payload error message
+    res.status(400).send({
+        signedUp: false,
+        error:"Invalid Payload"
     });
 });
 
@@ -104,4 +170,60 @@ function validateUser(username, password) {
     }
     
     return null; //Invalid user
+}
+
+/**
+ * Validates user sign up JSON payload object 
+ * @param {Object} payload 
+ * @returns valid Payload 
+ */
+function validateSignUpPayload(payload) {
+    if("username" in payload && "password" in payload && "email" in payload) {
+        return true;
+    }
+    return false;
+}
+
+
+/** NEEDS IMPLEMENTING
+ * Validate password based on password requirements 
+ * @param {String} password 
+ * @returns boolean  
+ */
+function validatePassword(password) {
+    return true;
+}
+
+/**
+ * Checks if user already has username
+ * @param {String} username
+ * @returns boolean based on if username exists
+ */
+function checkUsernameTaken(username) {
+    for(let index in TEMP_USER_DB) {
+        if(TEMP_USER_DB[index].username == username) {
+            return true; //Username taken
+        }
+    }
+
+    return false; //Username NOT taken 
+}
+
+/** NEEDS IMPLEMENT
+ * Quries database service and adds user 
+ * @param {Object} user 
+ * @returns boolean
+ */
+function signUpUser(user) {
+    const id = uuid.v4(); //Generate UUID
+
+    const userObj = {
+        userID: id,
+        username: user.username,
+        password: user.password,
+        email: user.email
+    }
+    TEMP_USER_DB.push(userObj);
+
+    return true;
 }
