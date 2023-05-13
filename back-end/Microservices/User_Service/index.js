@@ -4,7 +4,8 @@
  *  All API end points start with /api/user
  * 
  *  API end points:
- *  - GET - /
+ *  - POST - /login
+ *  - POST - /signup
  * 
  */
 const PORT = 3051;
@@ -150,7 +151,7 @@ app.listen(PORT, () => {
 
 
 
-//FUNCTION
+//FUNCTIONS
 
 
 /**
