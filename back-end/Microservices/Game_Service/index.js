@@ -9,6 +9,9 @@
 require('dotenv').config();
 const PORT = process.env.PORT;
 
+//Importing GameState class
+import {GameState} from "./GameStateClass.js";
+
 //Http server
 const http = require("http");
 const server = http.createServer();
@@ -30,6 +33,15 @@ socketServer.on("connection", (socket) => {
     socket.on("message", (buffer) => {
         const message = JSON.parse(buffer);
         console.log(message);
+        
+        if("type" in message) {
+            switch(message.type) {
+                case "JOIN":
+
+                    break;
+            }
+        }
+
     });
 
 
@@ -38,3 +50,12 @@ socketServer.on("connection", (socket) => {
         console.log("Connection has been closed");
     });
 })
+
+
+
+//Handling JOIN game
+function joinUserToGame() {
+    //First we have to find a game that is in the WAITING state
+    //IF free WAITING >> join
+    //ELSE >> create game >> and join user to game
+}
