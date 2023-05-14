@@ -51,7 +51,6 @@ socketServer.on("connection", (socket) => {
      * come from
      */
     socket.on("message", (buffer) => {
-        console.log(buffer);
         const message = JSON.parse(buffer); //HANDLE IF BODY IS NOT JSON WILL THROW ERROR AND RESULT IN CRASH
         console.log(message);
 
@@ -64,10 +63,16 @@ socketServer.on("connection", (socket) => {
                 switch(message.type) {
                     case "AUTH":
                         handleAuthenticationMessage(socket, message);
-                        break;
+                        return;
                 }
             } 
+            socket.close(3000, JSON.stringify({
+                type: "PAYLOAD",
+                message: "Invalid Payload"
+            })); 
         } else {
+            //ELSE the socket is already authenticated
+
             socket.send(JSON.stringify({
                 type: "message",
                 message: "Already authenticated"
@@ -75,12 +80,11 @@ socketServer.on("connection", (socket) => {
         }
     });
 
-});
 
-
-socketServer.on("close", () => {
-
-    console.log("Client has closed connection");
+    socket.on("close", () => {
+        removeSocketFromMap(socket);
+        console.log("Client connection has closed");
+    });
 });
 
 
