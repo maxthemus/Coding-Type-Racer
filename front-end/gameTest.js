@@ -5,6 +5,14 @@ let socket;
 
 function joinGame() {
     console.log("User Joining Game");
+
+    if(socket) {
+        socket.send(JSON.stringify({
+            
+        }));
+    } else {
+        console.log("SOCKET IS NOT OPEN");
+    }
 }
 
 function leaveGame() {

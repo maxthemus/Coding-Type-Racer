@@ -1,5 +1,5 @@
-export class GameState {
-    constructor(gameId, userId, text) {
+class GameState {
+    constructor(gameId, text) {
         this.id = gameId;
         this.state = "WAITING";
         this.players = [userId];
@@ -33,7 +33,9 @@ export class GameState {
         return false;
     }
     
-
+    updatePlayerState(userId, newStatus) {
+        this.playerStatus.set(userId, newStatus);
+    }
 
     stateToJSON() {
         return JSON.stringify({
@@ -45,3 +47,7 @@ export class GameState {
         });
     }
 }
+
+module.exports = {
+    GameState
+};
