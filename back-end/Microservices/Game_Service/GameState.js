@@ -4,6 +4,8 @@ class GameState {
         this.state = "WAITING";
         this.players = [];
         this.playerStatus = new Map();
+        this.playerPlacements = new Map();
+        this.nextPlace = 1;
         this.text = text;
     }
 
@@ -17,6 +19,7 @@ class GameState {
             if(!this.players.includes(userId)) {
                 this.players.push(userId);
                 this.playerStatus.set(userId, 0);
+                this.playerPlacements.set(userId, -1);
                 return true;
             } else {
                 return false;
@@ -28,6 +31,7 @@ class GameState {
         if(index != -1) {
             this.players.splice(index);
             this.playerStatus.delete(userId);
+            this.playerPlacements.delete(userId);
             return true;
         }     
         return false;
@@ -43,6 +47,7 @@ class GameState {
             state: this.state,
             players:  this.players,
             playerStatus: this.playerStatus,
+            playerPlacements: this.playerPlacements,
             text: this.text
         });
     }
@@ -53,8 +58,13 @@ class GameState {
             state: this.state,
             players:  this.players,
             playerStatus: this.playerStatus,
+            playerPlacements: this.playerPlacements,
             text: this.text
         };
+    }
+
+    playerFinished(userId) {
+        this.playerPlacements.set(userId, this.nextPlace++);
     }
 }
 

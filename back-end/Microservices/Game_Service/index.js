@@ -138,6 +138,32 @@ socketServer.on("connection", (socket) => {
                         }));
                     }                    
                     break;
+                case "FINISHED":
+                    //Update game state with players finished                    
+                    let usersGame = userToGameMap.get(message.userId);
+                    if(usersGame) {
+                        let usersPlacement = usersGame.playerFinished();
+                    }
+                    
+                    socket.send(JSON.stringify({
+                        type: "USER-FINISHED",
+                        gameState: usersGame.stateToObj()
+                    }));
+
+                    //Last player to finish must clean up the gameState 
+                    //Uses user id to clean
+                    cleanUpUser(message.userId);
+                    
+                    //Printing out stuff for debuggin purposes
+                    console.log(userToGameMap);
+                    console.log(waitingGames);
+                    console.log(runningGames);
+                    break;
+                case "DISCONNECTED":
+                    cleanUpUser(message.userId);
+                    //User has disconnected CLEAN UP user data
+                    //Uses user id to clean
+                    break;
             }
         }
 
@@ -221,3 +247,20 @@ function startGame(gameId) {
     }
     return false;
 }
+
+
+function cleanUpUser(userId) {
+    let usersGame = userToGameMap.get(userId);
+
+    if(usersGame) {
+        const gameId = usersGame.id;
+        disconectUserFromGame(userId);
+        if(usersGame.players.length === 0) {
+            destoryGame(gameId);
+            waitingGames.delete(gameId);
+            runningGames.delete(gameId);
+        }
+    }
+}
+
+

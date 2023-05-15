@@ -1,6 +1,18 @@
 let socket;
 let gameId; 
 
+function finishedGame() {
+    console.log("Finishing game");
+
+    if(socket) {
+        socket.send(JSON.stringify({
+            type: "FINISHED",
+            userId: "test-id"
+        }));
+    }
+}
+
+
 
 
 function joinGame() {
