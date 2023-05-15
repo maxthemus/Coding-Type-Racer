@@ -2,7 +2,7 @@ class GameState {
     constructor(gameId, text) {
         this.id = gameId;
         this.state = "WAITING";
-        this.players = [userId];
+        this.players = [];
         this.playerStatus = new Map();
         this.text = text;
     }
@@ -26,7 +26,7 @@ class GameState {
     removePlayer(userId) {
         let index = this.players.indexOf(userId);
         if(index != -1) {
-            this.player.splie(index);
+            this.players.splice(index);
             this.playerStatus.delete(userId);
             return true;
         }     
@@ -46,8 +46,16 @@ class GameState {
             text: this.text
         });
     }
+
+    stateToObj() {
+        return {
+            id: this.id,
+            state: this.state,
+            players:  this.players,
+            playerStatus: this.playerStatus,
+            text: this.text
+        };
+    }
 }
 
-module.exports = {
-    GameState
-};
+module.exports = GameState;

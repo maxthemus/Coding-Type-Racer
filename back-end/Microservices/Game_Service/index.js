@@ -10,7 +10,7 @@ require('dotenv').config();
 const PORT = process.env.PORT;
 
 //Importing GameState class
-const GameState = require('./GameStateClass');
+const GameState = require('./GameState');
 
 //Http server
 const http = require("http");
@@ -40,7 +40,18 @@ socketServer.on("connection", (socket) => {
         if("type" in message) {
             switch(message.type) {
                 case "JOIN":
-                    if(!userToGameMap.has(message.userId)) {
+                    if("userId" in message) {
+                        //Checking if user is already in a game
+                        let userInGame = userToGameMap.has(message.userId);
+                        if(userInGame) {
+                            socket.send(JSON.stringify({
+                                type: "FAIL-JOIN",
+                                message: "Already in game"
+                            }));
+                            return;
+                        }
+                        
+                        //Finding game to join
                         const gameToJoin = findGameForUser(message.userId);
 
                         if(!gameToJoin) { //Checking if gameObject was found
@@ -48,10 +59,84 @@ socketServer.on("connection", (socket) => {
                             return;
                         } 
 
-                        joinUserToGame(userId, gameId);
+                        let joined = joinUserToGame(message.userId, gameToJoin);
+                        userToGameMap.set(message.userId, gameToJoin);                        
+
                         //We want to send response saying joined game
                         //And then we want to update all users in game that user has joined Game
+                        if(!joined) {
+                            console.log("Error joining user to game");
+                            return;
+                        }
+
+
+                        socket.send(JSON.stringify({
+                            type: "JOINED-GAME",
+                            userId: message.userId,
+                            gameState: gameToJoin.stateToObj()
+                        }));
+
+
+                        //Sending update to game state to users
+                        socket.send(JSON.stringify({
+                            type: "UPDATE-GAME",
+                            gameState: gameToJoin.stateToObj()
+                        }));
+                    } else {
+                        //Handling invalid payload
+                        console.log("Invalid payload");
                     }
+                    break;
+                case "LEAVE":
+                    if("userId" in message) {
+                        if(userToGameMap.has(message.userId)) {
+                            //Removing users from in game
+                            //MIGHT NOT HAVE TO DO THIS DEPENDS HOW LEAVE IS HANDLED ON FRONT END
+                            if(disconectUserFromGame(message.userId)) {
+                                console.log("Player removed from game");
+
+
+                                socket.send(JSON.stringify({
+                                    type: "LEAVE-GAME",
+                                    message: "Left game" 
+                                }));
+                            } else {
+                                socket.send(JSON.stringify({
+                                    type: "LEAVE-GAME",
+                                    message: "Left game but didn't exist"
+                                }));
+                            }
+
+                            //getting the users game
+                            const game = userToGameMap.get(message.userId);
+
+                            userToGameMap.delete(message.userId);
+                            destoryGame(game.id); 
+
+
+                            console.log(waitingGames);
+                        } else {
+                            socket.send(JSON.stringify({
+                                type: "LEAVE-GAME",
+                                message: "User was not mapped to game"
+                            })); 
+                        }
+                    } else {
+                        console.log("Invalid payload");
+                    }
+                    break;
+                case "START":
+                    let started = startGame(message.gameId);
+                    
+                    if(started) {
+                        const gameState = runningGames.get(message.gameId);
+                        socket.send(JSON.stringify({
+                            type: "START-GAME",
+                            started: true,
+                            timeToStart: 10,
+                            gameState: gameState.stateToObj 
+                        }));
+                    }                    
                     break;
             }
         }
@@ -83,20 +168,13 @@ function findGameForUser(userId) {
     }
 }
 
-function joinUserToGame(userId, gameId) {
-    if(waitingGames.has(gameId)) {
-        const gameState = waitingGames.get(gameId);
-        let joinGame = gameState.addPlayer(userId);
-        if(joinGame) {
-            gameState.setState("STARTING"); //Starts the countdown
-            startGame(gameId);
-        }
-    }
-    return false; //Something went wrong
+function joinUserToGame(userId, gameState) {
+    return gameState.addPlayer(userId);
 }
 
 function disconectUserFromGame(userId) {
-
+    let usersGame = userToGameMap.get(userId);
+    return usersGame.removePlayer(userId);
 } 
 
 
@@ -105,16 +183,41 @@ function disconectUserFromGame(userId) {
  * @returns a GameStateObject
  */
 function createGame() {
-    let gamedId = uuidv4();//Creating game UUID
+    let gameId = uuidv4();//Creating game UUID
     const gameState = new GameState(gameId, "this is a test text for building the game service");
     waitingGames.set(gameId, gameState); //Adding game to waiting
     return gameState;
 } 
 
 function destoryGame(gameId) {
-
+    //Checks if game has users 
+    let game = waitingGames.get(gameId);
+    if(game) {
+        if (game.players.length == 0) {
+            waitingGames.delete(gameId);
+            return;
+        }
+    }
+    game = runningGames.get(gameId);
+    if(game)  {
+        if (game.players.length == 0) {
+            runningGames.delete(gameId);
+            return;
+        }
+    }
 }
 
 function startGame(gameId) {
+    //When game is started we want to move the game from waiting to running
+    //When in running we want to produce a start time
     console.log("Starting Game");
+
+    if(waitingGames.has(gameId)) {
+        let gameState = waitingGames.get(gameId);
+        waitingGames.delete(gameId);
+
+        runningGames.set(gameId, gameState);
+        return true;
+    }
+    return false;
 }
