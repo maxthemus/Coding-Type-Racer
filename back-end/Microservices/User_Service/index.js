@@ -56,6 +56,7 @@ app.post(PATH+"/login", (req, res) => {
 
             if(validUser != null) {
                 //VALID USER create authentication JWT token
+                console.log(validUser.userId);
                 const token = jwt.sign({userId: validUser.userId}, key);
 
                 res.status(200).send({
@@ -216,15 +217,17 @@ function checkUsernameTaken(username) {
  * @returns boolean
  */
 function signUpUser(user) {
-    const id = uuid.v4(); //Generate UUID
+    let id =  uuid.v4(); //Generate UUID
 
     const userObj = {
-        userID: id,
+        userId: id,
         username: user.username,
         password: user.password,
         email: user.email
     }
+
     TEMP_USER_DB.push(userObj);
+    console.log(TEMP_USER_DB);
 
     return true;
 }
