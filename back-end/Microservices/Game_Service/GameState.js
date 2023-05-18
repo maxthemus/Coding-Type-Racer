@@ -53,12 +53,16 @@ class GameState {
     }
 
     stateToObj() {
+        //Turning maps into arrays        
+        let tempPlayerStatus = Array.from(this.playerStatus.entries());
+        let tempPlayerPlacements = Array.from(this.playerPlacements.entries());
+
         return {
             id: this.id,
             state: this.state,
             players:  this.players,
-            playerStatus: this.playerStatus,
-            playerPlacements: this.playerPlacements,
+            playerStatus: tempPlayerStatus,
+            playerPlacements: tempPlayerPlacements,
             text: this.text
         };
     }

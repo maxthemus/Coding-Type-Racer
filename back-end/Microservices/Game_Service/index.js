@@ -40,129 +40,21 @@ socketServer.on("connection", (socket) => {
         if("type" in message) {
             switch(message.type) {
                 case "JOIN":
-                    if("userId" in message) {
-                        //Checking if user is already in a game
-                        let userInGame = userToGameMap.has(message.userId);
-                        if(userInGame) {
-                            socket.send(JSON.stringify({
-                                type: "FAIL-JOIN",
-                                message: "Already in game"
-                            }));
-                            return;
-                        }
-                        
-                        //Finding game to join
-                        const gameToJoin = findGameForUser(message.userId);
-
-                        if(!gameToJoin) { //Checking if gameObject was found
-                            console.log("Error Finding Game");
-                            return;
-                        } 
-
-                        let joined = joinUserToGame(message.userId, gameToJoin);
-                        userToGameMap.set(message.userId, gameToJoin);                        
-
-                        //We want to send response saying joined game
-                        //And then we want to update all users in game that user has joined Game
-                        if(!joined) {
-                            console.log("Error joining user to game");
-                            return;
-                        }
-
-
-                        socket.send(JSON.stringify({
-                            type: "JOINED-GAME",
-                            userId: message.userId,
-                            gameState: gameToJoin.stateToObj()
-                        }));
-
-
-                        //Sending update to game state to users
-                        socket.send(JSON.stringify({
-                            type: "UPDATE-GAME",
-                            gameState: gameToJoin.stateToObj()
-                        }));
-                    } else {
-                        //Handling invalid payload
-                        console.log("Invalid payload");
-                    }
+                    console.log("Joining game");
+                    handleUserJoinGame(socket, message.userId);
                     break;
                 case "LEAVE":
-                    if("userId" in message) {
-                        if(userToGameMap.has(message.userId)) {
-                            //Removing users from in game
-                            //MIGHT NOT HAVE TO DO THIS DEPENDS HOW LEAVE IS HANDLED ON FRONT END
-                            if(disconectUserFromGame(message.userId)) {
-                                console.log("Player removed from game");
+                    console.log("Leaving Game");
 
-
-                                socket.send(JSON.stringify({
-                                    type: "LEAVE-GAME",
-                                    message: "Left game" 
-                                }));
-                            } else {
-                                socket.send(JSON.stringify({
-                                    type: "LEAVE-GAME",
-                                    message: "Left game but didn't exist"
-                                }));
-                            }
-
-                            //getting the users game
-                            const game = userToGameMap.get(message.userId);
-
-                            userToGameMap.delete(message.userId);
-                            destoryGame(game.id); 
-
-
-                            console.log(waitingGames);
-                        } else {
-                            socket.send(JSON.stringify({
-                                type: "LEAVE-GAME",
-                                message: "User was not mapped to game"
-                            })); 
-                        }
-                    } else {
-                        console.log("Invalid payload");
-                    }
                     break;
                 case "START":
-                    let started = startGame(message.gameId);
-                    
-                    if(started) {
-                        const gameState = runningGames.get(message.gameId);
-                        socket.send(JSON.stringify({
-                            type: "START-GAME",
-                            started: true,
-                            timeToStart: 10,
-                            gameState: gameState.stateToObj 
-                        }));
-                    }                    
+                    console.log("Start Game");
                     break;
                 case "FINISHED":
-                    //Update game state with players finished                    
-                    let usersGame = userToGameMap.get(message.userId);
-                    if(usersGame) {
-                        let usersPlacement = usersGame.playerFinished();
-                    }
-                    
-                    socket.send(JSON.stringify({
-                        type: "USER-FINISHED",
-                        gameState: usersGame.stateToObj()
-                    }));
-
-                    //Last player to finish must clean up the gameState 
-                    //Uses user id to clean
-                    cleanUpUser(message.userId);
-                    
-                    //Printing out stuff for debuggin purposes
-                    console.log(userToGameMap);
-                    console.log(waitingGames);
-                    console.log(runningGames);
+                    console.log("Finshed Game");
                     break;
                 case "DISCONNECTED":
-                    cleanUpUser(message.userId);
-                    //User has disconnected CLEAN UP user data
-                    //Uses user id to clean
+                    console.log("User has disconnected");
                     break;
             }
         }
@@ -177,90 +69,70 @@ socketServer.on("connection", (socket) => {
 })
 
 //Variables for handling Games
-const waitingGames = new Map();
-const runningGames = new Map();
-const userToGameMap = new Map();
+const userToGame = new Map();
+const idToGame = new Map();
+const waitingGames = []; 
 
-//Handling JOIN game
-function findGameForUser(userId) {
-    //First we have to find a game that is in the WAITING state
-    //IF free WAITING >> join
-    //ELSE >> create game >> and join user to game
-    if(waitingGames.size > 0) {
-        const availableGame = waitingGames.values();
-        return availableGame.next().value; 
+/**
+ * Takes in socket and user id. Joins user to a game and responds to client. 
+ * @param {socket} socket 
+ * @param {userId as String} userId 
+ */
+function handleUserJoinGame(socket, userId) {
+    //Check if the user is already in a game
+    if(!userToGame.has(userId)) {
+        //USER is not in a game 
+
+        //Find game for user to join
+        let gameToJoin = searchForGame();
+        if(!gameToJoin) { //Checking if game was found
+            //Game was not found
+            gameToJoin = createGame();
+        }
+        
+        //JOIN user to game
+        joinGame(userId, gameToJoin);
+
+        //SEND response 
+        socket.send(JSON.stringify({
+            type: "USER-JOINED",
+            gameState: gameToJoin.stateToObj()
+        }));
     } else {
-        return createGame();
+        //USER is in a game 
     }
 }
-
-function joinUserToGame(userId, gameState) {
-    return gameState.addPlayer(userId);
-}
-
-function disconectUserFromGame(userId) {
-    let usersGame = userToGameMap.get(userId);
-    return usersGame.removePlayer(userId);
-} 
 
 
 /**
- * Creates a GameStateObject 
- * @returns a GameStateObject
+ * searches waitingGames array to find a game to join 
+ * @returns { GameState || Null } gameState object
+ */
+function searchForGame() {
+    if(waitingGames.length > 0) {
+        return waitingGames[0];
+    }    
+    return null;
+}
+
+/**
+ * Creates game StateObject 
+ * @returns { GameState } gameState object
  */
 function createGame() {
-    let gameId = uuidv4();//Creating game UUID
-    const gameState = new GameState(gameId, "this is a test text for building the game service");
-    waitingGames.set(gameId, gameState); //Adding game to waiting
-    return gameState;
-} 
-
-function destoryGame(gameId) {
-    //Checks if game has users 
-    let game = waitingGames.get(gameId);
-    if(game) {
-        if (game.players.length == 0) {
-            waitingGames.delete(gameId);
-            return;
-        }
-    }
-    game = runningGames.get(gameId);
-    if(game)  {
-        if (game.players.length == 0) {
-            runningGames.delete(gameId);
-            return;
-        }
-    }
-}
-
-function startGame(gameId) {
-    //When game is started we want to move the game from waiting to running
-    //When in running we want to produce a start time
-    console.log("Starting Game");
-
-    if(waitingGames.has(gameId)) {
-        let gameState = waitingGames.get(gameId);
-        waitingGames.delete(gameId);
-
-        runningGames.set(gameId, gameState);
-        return true;
-    }
-    return false;
+    const gameId = uuidv4();
+    const newGame = new GameState(gameId, "test text for game");
+    waitingGames.push(newGame);
+    return newGame;
 }
 
 
-function cleanUpUser(userId) {
-    let usersGame = userToGameMap.get(userId);
-
-    if(usersGame) {
-        const gameId = usersGame.id;
-        disconectUserFromGame(userId);
-        if(usersGame.players.length === 0) {
-            destoryGame(gameId);
-            waitingGames.delete(gameId);
-            runningGames.delete(gameId);
-        }
-    }
+/**
+ * Joins user to a gameState object 
+ * @param { userId as String} userId 
+ * @param { gameState } gameState 
+ */
+function joinGame(userId, gameState) {
+    gameState.addPlayer(userId); //Adding user to gameState
+    userToGame.set(userId, gameState.id); //Mapping user to gameId
 }
-
-

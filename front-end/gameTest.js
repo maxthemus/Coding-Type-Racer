@@ -1,5 +1,7 @@
 let socket;
 let gameId; 
+let userId = "test-id";
+document.getElementById("user-id").innerText = "userID = " + userId;
 
 function finishedGame() {
     console.log("Finishing game");
@@ -12,6 +14,10 @@ function finishedGame() {
     }
 }
 
+function setUserId() {
+    userId = prompt("New User ID");
+    document.getElementById("user-id").innerText = "userID = " + userId;
+}
 
 
 
@@ -21,7 +27,7 @@ function joinGame() {
     if(socket) {
         socket.send(JSON.stringify({
             type: "JOIN",
-            userId: "test-id"
+            userId: userId
         }));
     } else {
         console.log("SOCKET IS NOT OPEN");
@@ -34,7 +40,7 @@ function leaveGame() {
     if(socket) {
         socket.send(JSON.stringify({
             type: "LEAVE",
-            userId: "test-id"
+            userId: userId
         }));
     }
 }
@@ -46,7 +52,7 @@ function startGame() {
         if(gameId) {
             socket.send(JSON.stringify({
                 type: "START",
-                userId: "test-id",
+                userId: userId,
                 gameId: gameId 
             }));
         } else {
@@ -75,8 +81,13 @@ function openSocket() {
 
         if("type" in payload) {
             switch(payload.type) {
-                case "JOINED-GAME":
+                case "USER-JOINED":
                     gameId = payload.gameState.id;
+
+                    let playerStatus = new Map(payload.gameState.playerStatus);
+                    let playerPlacements = new Map(payload.gameState.playerPlacements);
+                    console.log(playerStatus);
+                    console.log(playerPlacements);
                     break;
                 case "START-GAME":
                     startTime = payload.timeToStart;
