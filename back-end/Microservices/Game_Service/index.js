@@ -45,17 +45,24 @@ socketServer.on("connection", (socket) => {
                     break;
                 case "LEAVE":
                     console.log("Leaving Game");
-
+                    handleUserLeave(socket, message.userId);
                     break;
                 case "START":
+                    handleUserStart(socket, message.userId);
                     console.log("Start Game");
                     break;
                 case "FINISHED":
                     console.log("Finshed Game");
+                    handleUserFinish(socket, message.userId);
                     break;
                 case "DISCONNECTED":
                     console.log("User has disconnected");
+                    handleUserLeave(socket, message.userId); //Leaving is the same as disconnecting
                     break;
+                case "UPDATE":
+                    console.log("User is updating");
+                    handleUserUpdate(socket, message.userId, message.userStatus);
+                    break;    
             }
         }
 
@@ -69,9 +76,10 @@ socketServer.on("connection", (socket) => {
 })
 
 //Variables for handling Games
-const userToGame = new Map();
+const userToGame = new Map(); //Map userId to GameId
 const idToGame = new Map();
 const waitingGames = []; 
+const emptyGames = []; //FOR DEBUGGING should probably remove
 
 /**
  * Takes in socket and user id. Joins user to a game and responds to client. 
@@ -88,7 +96,7 @@ function handleUserJoinGame(socket, userId) {
         if(!gameToJoin) { //Checking if game was found
             //Game was not found
             gameToJoin = createGame();
-        }
+        }  
         
         //JOIN user to game
         joinGame(userId, gameToJoin);
@@ -122,6 +130,7 @@ function searchForGame() {
 function createGame() {
     const gameId = uuidv4();
     const newGame = new GameState(gameId, "test text for game");
+    idToGame.set(gameId, newGame);
     waitingGames.push(newGame);
     return newGame;
 }
@@ -135,4 +144,167 @@ function createGame() {
 function joinGame(userId, gameState) {
     gameState.addPlayer(userId); //Adding user to gameState
     userToGame.set(userId, gameState.id); //Mapping user to gameId
+}
+
+
+/**
+ * Removes user from game. 
+ * @param { socket } socket 
+ * @param { userId as String } userId 
+ */
+function handleUserLeave(socket, userId) {
+    const gameId = userToGame.get(userId);
+    const usersGame = idToGame.get(gameId);
+    
+    console.log(idToGame);
+
+    //Checking if user is in game
+    if(usersGame) {
+        //If the user is in a game THEN we want to leave the game
+
+        //Leaving the game
+        const playerRemoved = usersGame.removePlayer(userId);
+        if(!playerRemoved) { //Checking for removing bugs
+            console.log("BUG removing player");
+        }
+
+        //Once the place has left we need to check the gameState to see if player array is empty
+        if(usersGame.players.length == 0) {
+            console.log("Game is empty... Needs to be cleaned up");
+            console.log(emptyGames); //Printing out the empty games
+            usersGame.gameState = "EMPTY"; //Setting game state to EMPTY
+            emptyGames.push(usersGame); //Adding usersGame to empty array
+
+            /** TODO -- CLEAN UP EMPTY GAMES */
+            //Removing gameState from map
+            idToGame.delete(gameId);
+
+            //removing games from waiting agmes
+            if(usersGame.state == "WAITING") {
+                let index = waitingGames.indexOf(usersGame);
+                waitingGames.splice(index, 1);
+            }
+       } else {
+            //We want to send an update of the gameState back to users
+            socket.send(JSON.stringify({
+                type: "GAME-UPDATE",
+                gameState: usersGame.stateToObj()
+            })); 
+        }
+
+        //Removing map from userId to GameId
+        userToGame.delete(userId);
+
+        //Sending back response
+        socket.send(JSON.stringify({
+            type: "USER-LEAVE",
+            userId: userId,
+            message: "User has left the game"
+        }));
+
+        //Updating game State on clients
+    
+    }
+}
+
+/**
+ * Handles starting the game 
+ * @param { Socket} socket 
+ * @param { userId as String } userId 
+ */
+function handleUserStart(socket, userId) {
+    const gameId = userToGame.get(userId);
+    const usersGame = idToGame.get(gameId);
+    
+    console.log(idToGame);
+
+    //Checking if user is in game
+    if(usersGame) {
+        //Checking if game is not running
+        if(usersGame.gameState != "RUNNING") {
+            //FOR DEBUGGING PURPOSES
+            if(usersGame.gameState == "EMPTY") {
+                //Game wasn't cleaned up correctly
+                console.log("Game is EMPTY");
+            }
+
+            //set gameState to "RUNNING"
+            usersGame.gameState = "RUNNING";
+
+            //Send response "GAME-START"
+            socket.send(JSON.stringify({
+                type: "GAME-START",
+                gameState: usersGame.stateToObj() 
+            }));
+        }
+    }
+}
+
+
+/**
+ * Handles when user finished the game
+ * @param { Socket } socket 
+ * @param { userId as String } userId 
+ */
+function handleUserFinish(socket, userId) {
+    const gameId = userToGame.get(userId);
+    const usersGame = idToGame.get(gameId);
+    
+    console.log(idToGame);
+
+    //Checking if user is in game
+    if(usersGame) {
+        //Checking if gameState is "RUNNING"
+        if(usersGame.gameState == "RUNNING") {
+            //Now we want to check if the user has already finished
+            console.log(usersGame.length);
+
+            //Checking to see if user has finished
+            if(usersGame.playerStatus.get(userId) >= usersGame.length) {
+                const place = usersGame.nextPlace++; //Getting the place and then incrementing it
+                usersGame.playerPlacements.set(userId, place);
+
+                //Sending message to user saying finished
+                socket.send(JSON.stringify({
+                    type: "USER-FINISHED",
+                    userId: userId,
+                    placement: place, 
+                    gameState: usersGame.stateToObj()
+                }));
+
+                //Send update to everyone saying finished
+                socket.send(JSON.stringify({
+                    type: "GAME-UPDATE",
+                    gameState: usersGame.stateToObj()
+                }));
+            } 
+        }
+    } 
+}
+
+
+/**
+ * 
+ * @param { Socket } socket 
+ * @param { userId as String } userId 
+ * @param { status as String } updateStatus 
+ */
+function handleUserUpdate(socket, userId, updateStatus) {
+    const gameId = userToGame.get(userId);
+    const usersGame = idToGame.get(gameId);
+
+    console.log(usersGame);
+
+    if(usersGame) {
+        if(usersGame.gameState == "RUNNING") {
+            //Updating users status on the gameState object
+            usersGame.playerStatus.set(userId, updateStatus);
+
+            //Sending update back to users in game
+            socket.send(JSON.stringify({
+                type: "GAME-UPDATE",
+                gameState: usersGame.stateToObj()
+            }));
+        }
+    }
 }

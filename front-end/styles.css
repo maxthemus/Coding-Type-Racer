@@ -68,11 +68,13 @@ font-weight: bold;
 }
 
 .correct {
-    color: green;
+    color: black;
+    background-color: green;
 }
 
 .incorrect {
-    color: red;
+    color: black;
+    background-color: red;
     text-decoration: underline;
 }
 

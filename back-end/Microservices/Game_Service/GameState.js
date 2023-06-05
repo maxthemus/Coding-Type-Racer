@@ -7,6 +7,7 @@ class GameState {
         this.playerPlacements = new Map();
         this.nextPlace = 1;
         this.text = text;
+        this.length = (text.split(" ")).length;
     }
 
     setState(newState) {
@@ -29,7 +30,7 @@ class GameState {
     removePlayer(userId) {
         let index = this.players.indexOf(userId);
         if(index != -1) {
-            this.players.splice(index);
+            this.players.splice(index, 1);
             this.playerStatus.delete(userId);
             this.playerPlacements.delete(userId);
             return true;

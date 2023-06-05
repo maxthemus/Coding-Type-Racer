@@ -11,6 +11,7 @@
 require('dotenv').config();
 const PORT = process.env.PORT;
 const PATH = process.env.PATH;
+const GAME_SERVICE = process.env.GAME_SERVICE;
 
 //Express set up
 const express = require("express");
@@ -37,10 +38,15 @@ const key = fs.readFileSync("../../Authentication/secret.key", "utf-8").trim();
 //JSON web tokens
 const jwt = require("jsonwebtoken");
 
+//Web socket client for connection to GameService
+const gameServiceSocket = new WebSocket(GAME_SERVICE);  
+gameServiceSocket.on('error', console.error); //Printing out error if there is an error
+
 
 //Handling Web Sockets
 //Maps user Sockets -> UserId
-const CLIENT_SOCKETS = new Map();
+const CLIENT_SOCKETS = new Map(); //socket -> ID
+const ID_SOCKET = new Map(); //ID -> socket
 
 socketServer.on("connection", (socket) => {
     console.log("Client has connected");
@@ -72,10 +78,32 @@ socketServer.on("connection", (socket) => {
             })); 
         } else {
             //ELSE the socket is already authenticated
+            console.log("Authenticated");
 
+            //Checking if message is in payload
+            if("type" in message) {
+                //Checking message type
+                switch (message.type) {
+                    case "JOIN":
+                        //Calling game join handler
+                        handleUserJoinGame(socket, CLIENT_SOCKETS.get(socket));
+                        return;
+                    case "LEAVE":
+                        handleUserLeaveGame(socket, CLIENT_SOCKETS.get(socket));
+                        return;
+                    case "UPDATE":
+                        handleUserUpdate(socket, CLIENT_SOCKETS.get(socket), message.userState);
+                        return;
+                    case "START":
+                       handleGameStart(socket, CLIENT_SOCKETS.get(socket));
+                       return;
+                    case "FINISHED":
+                        handleGameFinshed(socket, CLIENT_SOCKETS.get(socket));
+                }
+            }
             socket.send(JSON.stringify({
-                type: "message",
-                message: "Already authenticated"
+                type: "PAYLOAD",
+                message: "Invalid Payload"
             }));
         }
     });
@@ -107,6 +135,7 @@ function handleAuthenticationMessage(socket, message) {
                 type: "AUTH",
                 authenticated: true
             }));
+            console.log("Socket Authenticated : UserId = " + CLIENT_SOCKETS.get(socket));
         }
     } 
 }
@@ -142,6 +171,7 @@ function authenticateSocket(socket, token) {
  */
 function addSocketToMap(socket, userId) {
     CLIENT_SOCKETS.set(socket, userId);
+    ID_SOCKET.set(userId, socket);
 }
 
 /**
@@ -149,5 +179,201 @@ function addSocketToMap(socket, userId) {
  * @param {socket} socket 
  */
 function removeSocketFromMap(socket) {
+    const userId = CLIENT_SOCKETS.get(socket);
+
     CLIENT_SOCKETS.delete(socket);
+    ID_SOCKET.delete(userId);
+}
+
+/**
+ * Forwards "JOIN" to game serivce to join user to game
+ * @param { Socket } socket 
+ * @param { userId as String } userId 
+ */
+function handleUserJoinGame(socket, userId) {
+    console.log("Join join game");
+
+    //Checking to see if connection to game service is open
+    if(gameServiceSocket.readyState == WebSocket.OPEN) {
+        const message = JSON.stringify({
+            type: "JOIN",
+            userId: userId 
+        });
+    
+        gameServiceSocket.send(message);
+    } else {
+        const message = JSON.stringify({
+            type: "ERROR",
+            message: "Internal server error"
+        });
+
+        socket.send(socket);
+    }
+}
+
+
+
+//Handling client socket connected to the GAME_SERVICE
+gameServiceSocket.on("message", (data) => {
+    const message = JSON.parse(data);
+
+    //Getting type of message 
+    if("type" in message) {
+        switch(message.type) {
+            case "USER-JOINED":
+                console.log("User has joined Game");
+                joinGameResponse(message.gameState);
+                return;
+            case "USER-LEAVE":
+                leaveGameResponse(message.userId);
+                return;
+            case "GAME-UPDATE":
+                updateGameResponse(message.gameState);
+                return;
+            case "GAME-START":
+                startGameResponse(message.gameState);
+                return;
+            case "USER-FINISHED":
+                finishedGameResponse(message.userId, message.placement, message.gameState);
+                return;
+        }
+    }
+});
+
+
+
+//Functions for sending responses to clients for the game service
+/**
+ * Sends response back to client with updated game state with new player 
+ * @param { GameState as object } gameState 
+ */
+function joinGameResponse(gameState) {
+    console.log(gameState);
+    
+    if("players" in gameState) {
+        broadCastObject(gameState.players, gameState, "USER-JOIN");
+    }    
+}
+
+
+//Function to send an object to all users in an array of userId
+/**
+ * Sends object to specified users 
+ * @param { Array of userId } users 
+ * @param { Object } objectToSend 
+ * @param { String } type
+ */
+function broadCastObject(users, objectToSend, type) {
+    //Checking type of users
+    if(Array.isArray(users)) {
+        for(let index in users) {
+            if(ID_SOCKET.has(users[index])) {
+                const userSocket = ID_SOCKET.get(users[index]);
+
+                const message = JSON.stringify({
+                    type: type,
+                    gameState: objectToSend
+                });
+
+                userSocket.send(message);
+            }
+        } 
+    } 
+}
+
+
+//Handles user leaving the game
+/**
+ * Forward leave message to game service 
+ * @param { socket} socket 
+ * @param { userId as String } userId 
+ */
+function handleUserLeaveGame(socket, userId) {
+    if(gameServiceSocket.readyState == WebSocket.OPEN) {
+        const message = JSON.stringify({
+            type: "LEAVE",
+            userId: userId
+        });
+
+        gameServiceSocket.send(message);
+    }
+}
+
+
+//Function for sending a leaving game response
+function leaveGameResponse(userId) {
+    if(ID_SOCKET.has(userId)) {
+        const socket = ID_SOCKET.get(userId);
+        socket.send(JSON.stringify({
+            type:"USER-LEAVE",
+            message: "You have left the game!"
+        }));
+    }
+}
+
+//Function for sending an update response to users in game
+function updateGameResponse(gameState) {
+    if("players" in gameState) {
+        broadCastObject(gameState.players, gameState, "GAME-UPDATE");
+    } 
+}
+
+//Handles user update request
+function handleUserUpdate(socket, userId, userState) {
+    console.log("Updating the users state");
+    if(gameServiceSocket.readyState == WebSocket.OPEN) {
+        const message = JSON.stringify({
+            type: "UPDATE",
+            userId: userId,
+            userStatus: userState
+        });
+
+        gameServiceSocket.send(message);
+    }
+}
+
+//Handles user starting the game
+function handleGameStart(socket, userId) {
+    console.log("Starting game");
+    if(gameServiceSocket.readyState == WebSocket.OPEN) {
+        const message = JSON.stringify({
+            type: "START",
+            userId: userId
+        });
+
+        gameServiceSocket.send(message);
+    }
+}
+
+function startGameResponse(gameState) {
+    if("players" in gameState) {
+        broadCastObject(gameState.players, gameState, "GAME-START");
+    }
+} 
+
+function handleGameFinshed(socket, userId) {
+    console.log("Game Finished");
+    if(gameServiceSocket.readyState == WebSocket.OPEN) {
+        const message = JSON.stringify({
+            type: "FINISHED",
+            userId: userId
+        });
+
+        gameServiceSocket.send(message);
+    }
+}
+
+function finishedGameResponse(userId, placement, gameState) {
+    if(ID_SOCKET.has(userId)) {
+        const socket = ID_SOCKET.get(userId);
+
+        const finishedObj = {
+            userId: userId,
+            placement: placement
+        } 
+
+        if("players" in gameState) {
+            broadCastObject(gameState.players, finishedObj, "USER-FINISHED");
+        }
+    }
 }

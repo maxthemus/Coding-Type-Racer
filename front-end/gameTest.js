@@ -61,6 +61,20 @@ function startGame() {
    }
 }
 
+function sendUpdate() {
+    console.log("Sending update");
+    const status = prompt("New Status");
+
+    if(socket) {
+        if(gameId) {
+            socket.send(JSON.stringify({
+                type: "UPDATE",
+                userId: userId,
+                userStatus: status
+            }));
+        }
+    }
+}
 
 
 function openSocket() {

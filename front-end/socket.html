@@ -6,6 +6,43 @@
     </head>
     <body>
         <button onclick="authenticateSocket()">Message</button> 
+
+        <br/><br/>
+
+        <button onclick="openConnection()">Open Connection</button>
+        <button onclick="closeConnection()">Close Connection</button>
+
+        <br /><br />
+
+        <button onclick="authenticateSocket()">Authenticate Socket</button>
+
+        <br/><br />
+
+        <button onclick="joinGame()">Join Game</button>
+        <button onclick="leaveGame()">Leave Game</button>
+        <button onclick="startGame()">Start Game</button>
+
+        <br /><br />
+
+        <button onclick="typedWord()">Word Typed!</button>
+
+        <div class="game-info">
+            <p>Game Id = <span id="game-id"></span></p>
+            <p>Game State = <span id="game-state"></span></p>
+            <p>Game Text = <span id="game-text"></span></p>
+            <p>Game Text Length = <span id="game-text-length"></span></p>
+            <p>Player Info</p> 
+            <table>
+                <tr>
+                    <th>Player Id</th>
+                    <th>status</th>
+                </tr>
+                <tbody id="table-body">
+
+                </tbody>
+            </table>
+        </div>
+
         <script src="./socket.js"></script>
     </body>
 </html>

@@ -8,29 +8,83 @@ let inGame = false; //Variable to keep if user is in game or not
 let text = ""; //Holds text user is typing in game
 let textArray = []; //Holds the individual characters for the text in Array
 
-quoteInputElement.addEventListener('input', () =>{
+
+let indexPtr = 0;
+let nextSpaceIndex = 0;
+
+function setNextSpace() {
+    const arrayQuote = quoteDisplayElement.querySelectorAll('span');
+
+    for (let index = indexPtr; index < arrayQuote.length; index++) {
+        if (arrayQuote[index].innerText == ' ') {
+            nextSpaceIndex = index;
+            return;
+        }
+    }
+    nextSpaceIndex = arrayQuote.length; 
+}
+
+quoteInputElement.addEventListener('input', (event) =>{
     const arrayQuote = quoteDisplayElement.querySelectorAll('span')
     const arrayValue = quoteInputElement.value.split('')
 
+    console.log("next index = " +nextSpaceIndex);
+    console.log("indexPtr = " + indexPtr);
+
+    //Checking to see if word is done
+    if(event.data == " ") {
+        let validWord = true; //Be default word is valid
+        for(let index = indexPtr; index < nextSpaceIndex; index++) {
+            console.log(arrayValue[index]);
+
+            if(arrayQuote[index].classList != "correct") {
+                console.log("invalid letter");
+                validWord = false;
+                break;
+            }
+        }
+    
+        if(validWord) {
+            console.log("valid Word");
+            indexPtr = nextSpaceIndex + 1;
+            console.log(arrayQuote[indexPtr].innerText);
+
+            arrayQuote[nextSpaceIndex].classList.add("correct");
+            setNextSpace();
+
+
+            //Resetting the value in the input
+            quoteInputElement.value = "";
+        }
+
+    }
+
     let correct = true
     arrayQuote.forEach((charactersSpan, index) => {
-        const character = arrayValue[index]
-        if (character == null){ // if character hasn't been type null
-            charactersSpan.classList.remove('correct')
-            charactersSpan.classList.remove('incorrect')
-            correct = false
+        if(index >= indexPtr) {
+            const character = arrayValue[index - indexPtr];
+            console.log("Char = " + character);
+            if (character == null) { // if character hasn't been type null
+                charactersSpan.classList.remove('correct')
+                charactersSpan.classList.remove('incorrect')
+                correct = false
+            }
+            else if (character === charactersSpan.innerText) {
+                charactersSpan.classList.add('correct')
+                charactersSpan.classList.remove('incorrect')
+            } else {
+                charactersSpan.classList.remove('correct')
+                charactersSpan.classList.add('incorrect')
+                correct = false
+            }
         }
-        else if (character === charactersSpan.innerText){
-        charactersSpan.classList.add('correct')
-        charactersSpan.classList.remove('incorrect')
-        } else {
-        charactersSpan.classList.remove('correct')
-        charactersSpan.classList.add('incorrect')
-        correct = false
-    }
-    })
+   });
 
-    if (correct) renderNewQuote()
+
+    if (correct) {
+        renderNewQuote();
+        //indexPtr = 0;
+    }
 })
 
 //Function added so called when start button is clicked
@@ -40,9 +94,10 @@ function getText() {
 
 
 function getTextQuote(){
-    return fetch (QUOTE_API_URL)
-    .then(response => response.json())
-    .then(data => data.text)
+    return "testing this works";
+    //return fetch (QUOTE_API_URL)
+    //.then(response => response.json())
+    //.then(data => data.text)
 }
 
 async function renderNewQuote(){
@@ -57,6 +112,8 @@ async function renderNewQuote(){
     });
     quoteInputElement.value = null
     startTimer()
+
+    setNextSpace();
 }
 
 let startTime
@@ -73,6 +130,8 @@ function getTimerTime(){
 }
 
 renderNewQuote()
+
+
 
 //Functions
 /**
