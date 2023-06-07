@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<!-- File is for testing game Service socket connections -->
+<html>
+    <head>
+
+    </head>
+    <body>
+        <h1>Game Service Test</h1>
+        <button onclick="openSocket()">Open connection</button>
+        <button onclick="closeSocket()">Close Connection</button><br/>
+        <button onclick="joinGame()">Join Game</button> 
+        <button onclick="leaveGame()">Leave Game</button>
+        <button onclick="startGame()">Start Game</button><br/>
+        <button onclick="finishedGame()">Finished Game</button>
+        
+
+        <br/><br/>
+        <button onclick="setUserId()">Set User ID</button>
+
+        <br/><br/>
+        <p id="user-id"></p>
+
+        <br/><br/>
+        <button id="update" onclick="sendUpdate()">Update Game State</button>
+
+        <br/><br/>
+
+
+
+        <script src="./gameTest.js"></script>
+    </body>
+</html>
