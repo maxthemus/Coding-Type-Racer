@@ -9,9 +9,6 @@ let text = ""; //Holds text user is typing in game
 let textArray = []; //Holds the individual characters for the text in Array
 
 
-let indexPtr = 0;
-let nextSpaceIndex = 0;
-
 function setNextSpace() {
     const arrayQuote = quoteDisplayElement.querySelectorAll('span');
 
@@ -24,72 +21,80 @@ function setNextSpace() {
     nextSpaceIndex = arrayQuote.length; 
 }
 
+//FOR DEBUGGING PLZ REMOVE
+function spanTextToCharArray() {
+    const arrayQuote = quoteDisplayElement.querySelectorAll("span");
+    let array = [];
+
+    for(let index = 0; index < arrayQuote.length; index++) {
+        array.push(arrayQuote[index].innerText);
+    }
+
+    return array;
+}
+
+
+
+let indexPtr;
 quoteInputElement.addEventListener('input', (event) =>{
     const arrayQuote = quoteDisplayElement.querySelectorAll('span')
     const arrayValue = quoteInputElement.value.split('')
 
-    console.log("next index = " +nextSpaceIndex);
-    console.log("indexPtr = " + indexPtr);
+    console.log("Input value = " + event.data);
+    console.log("Quote value = " + spanTextToCharArray());
+    console.log("Input array = " + arrayValue);
 
-    //Checking to see if word is done
-    if(event.data == " ") {
-        let validWord = true; //Be default word is valid
-        for(let index = indexPtr; index < nextSpaceIndex; index++) {
-            console.log(arrayValue[index]);
+    console.log(indexPtr + " : " + (indexPtr + arrayValue.length));
 
-            if(arrayQuote[index].classList != "correct") {
-                console.log("invalid letter");
-                validWord = false;
-                break;
-            }
+    let valid = true;
+    for(let index = indexPtr; index < (indexPtr + arrayValue.length); index++) {
+        console.log(index + " : " + indexPtr);
+        if(arrayValue[index - indexPtr] == arrayQuote[index].innerText && valid) {
+            console.log(arrayValue[index - indexPtr] + " : is correct");
+            arrayQuote[index].classList.remove("incorrect");
+            arrayQuote[index].classList.add("correct");
+        } else {
+            valid = false;
+
+            arrayQuote[index].classList.remove("correct");
+            arrayQuote[index].classList.add("incorrect");
         }
-    
-        if(validWord) {
-            console.log("valid Word");
-            indexPtr = nextSpaceIndex + 1;
-            console.log(arrayQuote[indexPtr].innerText);
+    } 
 
-            arrayQuote[nextSpaceIndex].classList.add("correct");
-            setNextSpace();
-
-
-            //Resetting the value in the input
+    if(valid) {
+        if(indexPtr + arrayValue.length >= arrayQuote.length) {
+            alert("Quote is finished");
+            quoteInputElement.disabled = true;
             quoteInputElement.value = "";
-        }
-
-    }
-
-    let correct = true
-    arrayQuote.forEach((charactersSpan, index) => {
-        if(index >= indexPtr) {
-            const character = arrayValue[index - indexPtr];
-            console.log("Char = " + character);
-            if (character == null) { // if character hasn't been type null
-                charactersSpan.classList.remove('correct')
-                charactersSpan.classList.remove('incorrect')
-                correct = false
-            }
-            else if (character === charactersSpan.innerText) {
-                charactersSpan.classList.add('correct')
-                charactersSpan.classList.remove('incorrect')
-            } else {
-                charactersSpan.classList.remove('correct')
-                charactersSpan.classList.add('incorrect')
-                correct = false
+        } else {
+            switch (event.data) {
+                case " ":
+                    console.log("New World");
+                    //Clearing the input and shiriting the indexPtr
+                    indexPtr = (indexPtr + arrayValue.length);
+                    console.log(indexPtr);
+                    quoteInputElement.value = "";
+                    break;
+                case null:
+                    
+                    break;
+                default:
             }
         }
-   });
+    } 
 
-
-    if (correct) {
-        renderNewQuote();
-        //indexPtr = 0;
+    if(event.data == null) {
+        console.log("HERE");
+        arrayQuote[indexPtr + arrayValue.length].classList.remove("correct");
+        arrayQuote[indexPtr + arrayValue.length].classList.add("incorrect");
     }
-})
+});
 
 //Function added so called when start button is clicked
 function getText() {
     console.log("Starting Game");
+    renderNewQuote();
+
 }
 
 
@@ -101,6 +106,8 @@ function getTextQuote(){
 }
 
 async function renderNewQuote(){
+    indexPtr = 0;
+    quoteInputElement.enabled = true;
     const quote = await getTextQuote()
     console.log(quote);
 
@@ -129,8 +136,19 @@ function getTimerTime(){
    return Math.floor((new Date() - startTime) / 1000)// will always round down
 }
 
-renderNewQuote()
 
+
+//returns an array of all index of special character in order
+function getKeyIndexes(text) {
+    let indexes = [];
+
+    for(let index in text) {
+        if(text[index] == " ") {
+            indexes.push(index);
+        }
+    }
+    return indexes;
+}
 
 
 //Functions
