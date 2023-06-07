@@ -55,6 +55,7 @@ app.post(PATH+"/login", (req, res) => {
             let validUser = validateUser(req.body.username, req.body.password);
 
             if(validUser != null) {
+                console.log(validUser.userId);
                 //VALID USER create authentication JWT token
                 const token = jwt.sign({userId: validUser.userId}, key);
 
@@ -219,7 +220,7 @@ function signUpUser(user) {
     const id = uuid.v4(); //Generate UUID
 
     const userObj = {
-        userID: id,
+        userId: id,
         username: user.username,
         password: user.password,
         email: user.email
