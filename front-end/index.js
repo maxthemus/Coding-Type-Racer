@@ -1,3 +1,8 @@
+//Pages
+const LOGIN_PAGE = "./login.html";
+const SIGNUP_PAGE = "./signup.html";
+
+
 //Variables
 const QUOTE_API_URL = 'http://127.0.0.1:4000/api/v1/text' // put your api here max
 const quoteDisplayElement = document.getElementById('quoteDisplay')
@@ -7,6 +12,9 @@ const timerElement = document.getElementById('timer')
 let inGame = false; //Variable to keep if user is in game or not
 let text = ""; //Holds text user is typing in game
 let textArray = []; //Holds the individual characters for the text in Array
+
+//Function called onload of home page
+window.addEventListener("load", updateUserInfo);
 
 
 function setNextSpace() {
@@ -151,58 +159,42 @@ function getKeyIndexes(text) {
 }
 
 
-//Functions
-/**
-Funtion getText() will send an API request to the backend to recieve a random snippet of code for the game
-*/
-// function getText() {
-//     //Fetch is used to send API requests
-//     fetch(QUOTE_API_URL).then((payload) => { 
-//         return payload.json(); //Takes what is sent back and packages it into JSON
-//     }).then((data) => { //the parameter is data is the JSON 
-//         text = data.text;
-//         textArray = text.split("");
 
-//         addTextToScreen();
 
-//         inGame = true;
-//     }).catch((err) => {
-//         //ERROR handling
-//         console.log(err);
-//         alert("Something Went Wrong on FETCH REQUEST");
-//     });
-// }
+//Updating the user information in the header
+function updateUserInfo() {
+    //Checking if username is set
+    if(window.sessionStorage.getItem("username") !== null) {
+        //We want to display the username     
+        const usernameElement = document.createElement("h3");
+        usernameElement.innerText = window.sessionStorage.getItem("username");
+        document.getElementById("user-info").appendChild(usernameElement);
+    } else {
+        //We want to display the login and signup buttons
+         
+        //Setting up signup button
+        const signUpButton = document.createElement("button");
+        signUpButton.addEventListener("click", redirectSignUpPage);
+        signUpButton.innerText = "sign up";
+        signUpButton.id = "button-signup";
+       
+        //Setting up login button
+        const loginButton = document.createElement("button");
+        loginButton.addEventListener("click", redirectLoginPage);
+        loginButton.innerText = "login";
+        loginButton.id = "button-login";
 
-// function addTextToScreen() {
-//     document.getElementById("text__tag").innerHTML = ""; //Reseting the text to nothing
-    
-//     for(let i = 0; i < textArray.length; i++) {
-//         let tempElement = document.createElement("span");
-//         tempElement.innerText = textArray[i];
-//         tempElement.classList.add('incorrect');
-//         tempElement.setAttribute("id", "texts");
+        document.getElementById("user-info").appendChild(signUpButton);
+        document.getElementById("user-info").appendChild(loginButton);
+    }
+}
 
-//         let textTag = document.getElementById('text__tag');
-//         textTag.appendChild(tempElement);
-//     }
-// }
+//Handler for login button press
+function redirectLoginPage() {
+    window.location.href = LOGIN_PAGE;
+}
 
-// const inputFiel.getElementById('quoteInput')
-// inputField.addEventListener('input', () => {
-//     const spanArray = document.querySelectorAll("span");
-//     console.log("even handler");
-
-//     for(let i = 0; i < textArray.length; i++) {
-//         if(inputField.value.charAt(i) === textArray[i]) {
-//             //Correct
-//             spanArray[i].classList.remove("incorrect");
-//             spanArray[i].classList.remove("normal");
-//             spanArray[i].classList.add("correct");
-//         } else {
-//             //Incorrect
-//             spanArray[i].classList.remove("correct");
-//             spanArray[i].classList.remove("normal");
-//             spanArray[i].classList.add("incorrect");
-//         }
-//     }
-// });
+//Handler for signup button press
+function redirectSignUpPage() {
+    window.location.href = SIGNUP_PAGE;    
+}

@@ -11,10 +11,18 @@
 const PORT = 3051;
 const PATH = "/api/user";
 
+
+
+//Setting up cors
+const cors = require("cors");
+
 //Express set up
 const express = require("express");
 const app = express(); //Creating the app 
+
+app.use(cors());
 app.use(express.json());
+
 
 //Authentication key
 const fs = require('fs');
