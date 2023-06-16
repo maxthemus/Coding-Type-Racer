@@ -10,7 +10,7 @@
 //Configuration File
 require('dotenv').config();
 const PORT = process.env.PORT;
-const PATH = process.env.PATH;
+const API_PATH = process.env.PATH;
 const GAME_SERVICE = process.env.GAME_SERVICE;
 
 //Express set up
