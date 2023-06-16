@@ -8,10 +8,12 @@
  *  - POST - /signup
  * 
  */
-const PORT = 3051;
-const PATH = "/api/user";
-
-
+//Configuration File
+require('dotenv').config();
+const PORT = process.env.PORT;
+const PATH = process.env.API_PATH;
+const EMAIL = process.env.EMAIL;
+const PASS = process.env.PASS;
 
 //Setting up cors
 const cors = require("cors");
@@ -28,12 +30,19 @@ app.use(express.json());
 const fs = require('fs');
 const key = fs.readFileSync("../../Authentication/secret.key", "utf-8").trim();
 
+//Verification Key
+const verKey = fs.readFileSync("../../Authentication/secret_one.key", "utf-8").trim();
+
+
 //JSON web tokens
 const jwt = require("jsonwebtoken");
+const { PassThrough } = require('stream');
 
 //UUID v4 for userId
 const uuid = require("uuid");
 
+//node mailer set up
+const nodemailer = require("nodemailer");
 
 
 //#TEMP VARIABLES TO REPLICATE DB
@@ -42,6 +51,10 @@ let TEMP_USER_DB = [{
     username: "admin",
     password: "password"
 }];
+
+let INVALID_USER_DB = [
+
+];
 
 
 //#TEMP VARIABLES END
@@ -109,13 +122,21 @@ app.post(PATH+"/signup", (req, res) => {
 
             if(validPassword) {
                 let usernameTaken = checkUsernameTaken(req.body.username);
+                let emailTaken = checkEmailTaken(req.body.email);
 
-                if(!usernameTaken) {
+                if(!usernameTaken && !emailTaken) {
                     let userCreated = signUpUser(req.body);
 
                     if(userCreated) {
+                        const email = req.body.email;
+
+                        //Creating verification token
+                        const verificationToken = jwt.sign({email:email}, verKey,{expiresIn: '1d'})
+
+                        sendVerificationEmail(req.body.email, verificationToken);                        
+
                         res.status(200).send({
-                            signedUp: true
+                            signedUp: true,
                         });
                         return;
                     }
@@ -131,8 +152,9 @@ app.post(PATH+"/signup", (req, res) => {
                 res.status(409).send({
                     signedUp: false,
                     validPassword: true,
-                    usernameTaken: true,
-                    error: "Username is taken" 
+                    usernameTaken: usernameTaken,
+                    emailTaken: emailTaken, 
+                    error: "Information is taken" 
                 });
                 return;
             }
@@ -149,6 +171,40 @@ app.post(PATH+"/signup", (req, res) => {
         signedUp: false,
         error:"Invalid Payload"
     });
+});
+
+
+//User Signup Verification signup
+app.get(PATH+"/email/verification", (req, res) => {
+    const token = req.query.token;
+    //Verifiying token
+    try {
+        const decoded = jwt.verify(token, verKey);
+    
+        res.redirect("http://localhost/code-racer/front-end/index.html");
+
+        //Now we want to take the user from the temp 
+        let userIndex = -1;
+        for(let index in TEMP_USER_DB) {
+            if(INVALID_USER_DB[index].email == decoded.email) {
+                userIndex = index;
+                break;
+            }
+        }        
+
+        if(userIndex != -1) {
+            const validatedUser = INVALID_USER_DB.splice(userIndex, 1);
+            TEMP_USER_DB.push(validatedUser[0]);
+
+            console.log(TEMP_USER_DB);
+            console.log("----");
+            console.log(INVALID_USER_DB);
+        } else {
+            throw new Error();
+        }
+    } catch(err) {
+        res.redirect("http://localhost/code-racer/front-end/error.html");
+    }
 });
 
 
@@ -216,6 +272,12 @@ function checkUsernameTaken(username) {
         }
     }
 
+    for(let index in INVALID_USER_DB) {
+        if(INVALID_USER_DB[index].username == username) {
+            return true;
+        }
+    }
+
     return false; //Username NOT taken 
 }
 
@@ -233,7 +295,54 @@ function signUpUser(user) {
         password: user.password,
         email: user.email
     }
-    TEMP_USER_DB.push(userObj);
+    //TEMP_USER_DB.push(userObj);
+    INVALID_USER_DB.push(userObj);
 
     return true;
+}
+
+//Checks if the email is already taken
+function checkEmailTaken(email) {
+    for(let index in INVALID_USER_DB) {
+        if(INVALID_USER_DB[index].email == email) {
+            return true;
+        }
+    }
+
+    for(let index in TEMP_USER_DB) {
+        if(TEMP_USER_DB[index].email == email) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+//Send verification emil to user
+async function sendVerificationEmail(email, token) {
+    const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+            user: "codingracer@gmail.com",
+            pass:"hnnhzydvneleyfbo"
+        }
+
+    });
+
+    console.log(token);
+    const mailOptions = {
+        to: email,
+        subject: 'Coding Racer Email Verificaiton',
+        html: `<h3>Testing</h3><p>Click this link to verify this account: <a href="http://127.0.0.1:3051/api/user/email/verification?token=${token}">Link</a></p>`
+    }; 
+
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log(info.messageId);
+    } catch(err) {
+        console.log(err);
+        console.log("Error sending email");
+    }
 }

@@ -33,6 +33,8 @@ loginForm.addEventListener("submit", (event) => {
                 handleFailLogin();
             }
         }
+    }).catch((err) => {
+        console.log(err);
     });
 });
 

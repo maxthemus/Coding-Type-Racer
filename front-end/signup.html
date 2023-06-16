@@ -6,6 +6,7 @@
     <body>
         <form id="signup-form" method="POST">
             <label for="email">Email: </label>            
+            <div id="invalid-email"></div>
             <input id="form-email" name="email" type="email" required/>
 
             <label for="username">Username: </label>
@@ -22,8 +23,11 @@
             <input type="submit" value="Submit">
         </form>
 
+        <div id="signup-validation" style="display: none;">
+            <h3>Validate you email</h3>
+            <p>Email has been sent please click link on email to activate your account</p>
+        </div>
 
-        <button onclick="back()">Back</button>
         <script src="./signup.js"></script>
     </body>
 </html>
