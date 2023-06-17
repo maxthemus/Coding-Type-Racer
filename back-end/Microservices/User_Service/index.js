@@ -217,8 +217,6 @@ app.listen(PORT, () => {
 
 
 //FUNCTIONS
-
-
 /**
  * Checks users cridentails using the databse service 
  * @param {string} username username of user
