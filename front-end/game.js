@@ -1,8 +1,10 @@
 //VARIABLES
+const USER_SERVICE = "http://localhost:3051/api/user/";
 const LOGIN_PAGE = "./login.html";
 const MAIN_PAGE = "./index.html";
 const SOCKET_SERVER = "ws://127.0.0.1:3053";
 let socket; //Socket for connecting to game server
+let inGame;
 let countFunc; //For canceling interval
 let countValue; //For game start countdown interval reference
 let startTime;
@@ -15,6 +17,8 @@ window.addEventListener("load", () => {
         window.location.href = LOGIN_PAGE; //Reddirection to login page || Could be main page 
     }
     openSocketConnection(); //Opening socket connection
+
+    inGame = false; //setting in game to false
 });
 
 
@@ -69,6 +73,9 @@ function handleSocketMessage(event) {
             case "GAME-START":
                 handleGameStart(message.gameState);
                 return;
+            case "GAME-UPDATE":
+                updateGameStateDisplay(message.gameState);
+                return;
         }
     }
 }
@@ -80,25 +87,31 @@ function handleSocketClose() {
 
 //Function handles user joining a game
 function handleJoinGame(gameState) {
-    //Close the menu
-    removeGameMenu();
-
-    //Open up game view
-    displayGameView();
-
-    if(gameState.state == "WAITING") {
-        displayStartButton();
-    }
-
-    //Display the text for the game
-    displayGameText(gameState.text);
+    if(!inGame) {
+        //Close the menu
+        removeGameMenu();
     
+        //Open up game view
+        displayGameView();
+
+        if(gameState.state == "WAITING") {
+            displayStartButton();
+        }
+        
+        //Display the text for the game
+        displayGameText(gameState.text);
+        
+        inGame = true; //Setting in game 
+    }
+        
     //Adding player to the 
     updatePlayerData(gameState);
 }
 
 //Function handles game start
 function handleGameStart(gameState) {
+    removeStartButton(); //Removing the start button from the game
+
     countValue = 10; //10 Seconds
     countFunc = setInterval(countDown, 1000); 
 }
@@ -149,6 +162,8 @@ function displayGameMenu() {
 
     //Adding event listeners to buttons
     document.getElementById("queue-button").addEventListener("click", joinQueue);
+
+    document.getElementById("game-display").style.display = "block";
 }
 
 //Function for removing game menu
@@ -180,9 +195,18 @@ function removeGameView() {
 
 //FUNCITON FOR GAME 
 function updateGameStateDisplay(gameState) {
-    console.log(gameState);
-
     //Updating text 
+    const stateMap = new Map(gameState.playerStatus);
+    for(const [key, value] of stateMap) {
+        const stateTag = document.getElementById(key +"-state");
+        if(stateTag != null) {
+            let state = "";
+            for(let i = 0; i < value; i++) {
+                state += "1010";
+            }
+            stateTag.innerText = state;
+        }
+    }
 }
 
 function joinQueue() {
@@ -210,7 +234,7 @@ function displayGameText(text) {
 
 
 //Function displays all the player information in the game table
-function updatePlayerData(gameState) {
+async function updatePlayerData(gameState) {
     const gameTable = document.getElementById("info-table");
 
     //Upating user information
@@ -221,8 +245,19 @@ function updatePlayerData(gameState) {
             const userRow = document.createElement("tr"); 
             userRow.id = gameState.players[index];
 
+            let username = await fetch(USER_SERVICE+"info/username?id="+gameState.players[index]).then((res) => {
+                return res.json();
+            }).then((data) => {
+                console.log(data);
+                if("username" in data) {
+                    return data.username;
+                } else {
+                    return "...";
+                }
+            });
+
             const userNameCol = document.createElement("td");
-            userNameCol.innerText = gameState.players[index]; //Setting name as player ID <-- FOR NOW
+            userNameCol.innerText = username; //Setting name as player ID <-- FOR NOW
             userNameCol.id = gameState.players[index] + "-name";
         
             const userStateCol = document.createElement("td");
@@ -251,7 +286,6 @@ function updatePlayerData(gameState) {
 //Function to handle user input for game 
 let indexPtr = 0; //Variable for current index of character in typing
 function handleUserCharacterInput(event) {
-    console.log(event);
     const arrayQuote = document.getElementById("text-display").querySelectorAll("span"); //Getting all the span tags
     const arrayValue = document.getElementById("user-input").value.split('');
 
@@ -313,8 +347,10 @@ function displayStartButton() {
 
 function removeStartButton() {
     const button = document.getElementById("start-button");
-    button.removeEventListener("click", sendStartGame);
-    button.remove();
+    if(button != null) {
+        button.removeEventListener("click", sendStartGame);
+        button.remove();
+    }
 }
 
 function sendStartGame() {
@@ -335,13 +371,10 @@ function sendStartGame() {
 //Countdown function
 function countDown() {
     countValue--;
-    console.log("Count down = " + countValue);
-
     document.getElementById("counter").innerText = countValue;
 
     if(countValue <= 0) {
         clearInterval(countFunc);
-        console.log(countValue);
         startGame(); //Starting the game
     }
 }
@@ -349,13 +382,12 @@ function countDown() {
 //Count up function
 function countUp() {
     countValue++;
-    console.log("Count up = " + countValue);
-
     document.getElementById("counter").innerText = countValue;
 }
 
 function startGame() {
     state = 0;
+    indexPtr = 0; //For input handling
     startTime = new Date(); //Getting the start time
     countFunc = setInterval(countUp, 1000); //Starting timer
 
@@ -370,6 +402,10 @@ function gameFinished() {
     clearInterval(countFunc); //Stoping count function calls
 
     sendGameFinished();    
+
+    document.getElementById("game-display").style.display = "none"; //Removing game info from display
+    clearGameInfo(); //Removing game information from fields
+
 }
 
 function sendGameFinished() {
@@ -403,5 +439,16 @@ function updatePlayerPlacement(userId, placementNum) {
         default:
             userRow.innerText = placementNum + "th";
             break;
+    }
+}
+
+//Removes information from game display items
+function clearGameInfo() {
+    const inputField = document.getElementById("user-input");
+    inputField.value = "";
+
+    const textDisplay = document.getElementById("text-display");
+    while(textDisplay.firstChild) {
+        textDisplay.removeChild(textDisplay.firstChild);
     }
 }

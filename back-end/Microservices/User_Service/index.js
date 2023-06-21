@@ -211,6 +211,23 @@ app.get(PATH+"/email/verification", (req, res) => {
     }
 });
 
+//Get username information 
+app.get(PATH+"/info/username", (req, res) => {
+    const userId = req.query.id;
+    console.log(userId);
+    let username = "";
+    
+    for(let index in TEMP_USER_DB) {
+        if(TEMP_USER_DB[index].userId == userId) {
+            username = TEMP_USER_DB[index].username;
+            break;
+        }    
+    }
+    res.send({
+        username: username        
+    });
+});
+
 
 //Starting the server!
 app.listen(PORT, () => {
