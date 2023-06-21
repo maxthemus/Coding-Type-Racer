@@ -50,6 +50,10 @@ let TEMP_USER_DB = [{
     userId: "4b9e2dc4-19d4-4b18-85ee-14a2a356be0b",
     username: "admin",
     password: "password"
+}, {
+    userId: "4b9e2dc4-19d4-4b18-85ee-14a2a356be0f",
+    username: "test",
+    password: "test"
 }];
 
 let INVALID_USER_DB = [

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-
+        <link rel="stylesheet" href="./styles.css" />
         <script src="./game.js"></script>
     </head>
     <body>
@@ -12,6 +12,10 @@
         </div>
 
         <div id="game-main" style="display: none;">
+            <div id="game-timer">
+               <p id="counter"></p> 
+            </div>
+
             <div id="player-info">
                 <table id="info-table">
                     <tr>
@@ -22,11 +26,14 @@
                 </table>
             </div>
 
-            <div id="text-display"></div>
-
-            <div id="input-area">
-                <textArea id="user-input" style="resize: none;" autofocus>this is a test </textArea>
-            </div>
+            <div id="game-display">
+                <div id="text-display"></div>
+            
+                <div id="input-area">
+                    <textArea id="user-input" style="resize: none;" disabled></textArea>
+                </div>
+            </div> 
+            
 
         </div>
     </body>

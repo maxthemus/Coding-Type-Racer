@@ -99,6 +99,7 @@ socketServer.on("connection", (socket) => {
                        return;
                     case "FINISHED":
                         handleGameFinshed(socket, CLIENT_SOCKETS.get(socket));
+                        return;
                 }
             }
             socket.send(JSON.stringify({
@@ -216,6 +217,7 @@ function handleUserJoinGame(socket, userId) {
 //Handling client socket connected to the GAME_SERVICE
 gameServiceSocket.on("message", (data) => {
     const message = JSON.parse(data);
+    console.log(message);
 
     //Getting type of message 
     if("type" in message) {
@@ -365,6 +367,7 @@ function handleGameFinshed(socket, userId) {
 
 function finishedGameResponse(userId, placement, gameState) {
     if(ID_SOCKET.has(userId)) {
+        console.log("SENDING RES");
         const socket = ID_SOCKET.get(userId);
 
         const finishedObj = {
