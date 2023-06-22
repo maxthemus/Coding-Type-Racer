@@ -1,4 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Kanit&display=swap');
+
 * {
+    font-family: 'Kanit';
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -12,7 +15,8 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    background-color: rgb(0, 0, 0);
+    /*background-color: rgb(0, 0, 0); */
+    background-color: #222222;
 }
 
 body, .quote-input {
@@ -80,4 +84,98 @@ font-weight: bold;
 
 .normal {
     color: rgb(255, 255, 255);
+}
+
+
+/* MAX updates under here */
+header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 60px;
+    background-color: rgb(28, 91, 151);
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-left: 50px;
+    padding-right: 50px;
+}
+
+header #logo {
+    border: none;
+    background-color: rgba(0, 0, 0, 0);
+    height: 100%;
+    padding-left: 10px;
+    padding-right: 10px;
+
+}
+
+header .header_logo {
+    color: white;
+    font-size: 20px;
+    user-select: none;
+}
+
+header .header_user {
+    height: 100%;
+    width: 200px;
+    display: flex;
+}
+
+
+header .header_user button {
+    border:none;
+    height: 100%;
+    color: white;
+    width: 100px;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+header .header_user button:hover {
+    font-weight: bold;
+    background-color: rgba(10, 70, 126, 0.5);
+}
+
+/* FORM STYLES */
+form {
+    width: 500px;
+    height: 500px;
+    padding: 75px;
+    border-radius: 20px;
+    background-color:rgb(10, 70, 126); 
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+form label {
+    font-size: 20px;
+}
+
+form input {
+    border: none;
+    width: 300px;    
+    height: 40px;
+    background-color: rgba(0,0,0,0);
+    border-bottom: 1px solid white;
+    color: white;
+    font-size: 20px;
+    text-align: center;
+}
+form input:focus {
+    outline: none;
+}
+
+form #submit-button {
+    border: none;
+    width: 300px;
+    height: 50px;
+    color: white;
+    background-color: #00202A;
+}
+form #submit-button:hover {
+    font-weight: bold;
 }
