@@ -108,6 +108,7 @@ function handleUserJoinGame(socket, userId) {
         }));
     } else {
         //USER is in a game 
+        console.log("User is already in a game");
     }
 }
 
@@ -250,7 +251,7 @@ function handleUserFinish(socket, userId) {
     const gameId = userToGame.get(userId);
     const usersGame = idToGame.get(gameId);
     
-    console.log(idToGame);
+    //console.log(idToGame);
 
     //Checking if user is in game
     if(usersGame) {

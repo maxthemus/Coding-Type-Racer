@@ -1,7 +1,7 @@
 //VARIABLES
 const USER_SERVICE = "http://localhost:3051/api/user/";
 const LOGIN_PAGE = "./login.html";
-const MAIN_PAGE = "./index.html";
+const HOME_PAGE = "./index.html";
 const SOCKET_SERVER = "ws://127.0.0.1:3053";
 let socket; //Socket for connecting to game server
 let inGame;
@@ -159,13 +159,13 @@ function getUserInformation() {
 //Function for displaying game menu
 function displayGameMenu() {
     console.log("Displaying game");
-    document.getElementById("queue-menu").style.display = "block";
+    document.getElementById("queue-menu").style.display = "flex";
     document.getElementById("game-main").style.display = "none";
 
     //Adding event listeners to buttons
     document.getElementById("queue-button").addEventListener("click", joinQueue);
 
-    document.getElementById("game-display").style.display = "block";
+    document.getElementById("game-display").style.display = "flex";
 }
 
 //Function for removing game menu
@@ -175,14 +175,14 @@ function removeGameMenu() {
 
 
     document.getElementById("queue-menu").style.display = "none";
-    document.getElementById("game-main").style.display = "block";
+    document.getElementById("game-main").style.display = "flex";
 }
 
 //Function for displaying game view
 function displayGameView() {
     //removeGameMenu(); //Removing game menu
 
-    document.getElementById("game-main").style.display = "block"; //Displaying the game state
+    document.getElementById("game-main").style.display = "flex"; //Displaying the game state
 
     //Adding event listener to the game view input
     document.getElementById("user-input").addEventListener("input", handleUserCharacterInput);
@@ -204,7 +204,7 @@ function updateGameStateDisplay(gameState) {
         if(stateTag != null) {
             let state = "";
             for(let i = 0; i < value; i++) {
-                state += "1010";
+                state += "10101011";
             }
             stateTag.innerText = state;
         }
@@ -261,12 +261,15 @@ async function updatePlayerData(gameState) {
             const userNameCol = document.createElement("td");
             userNameCol.innerText = username; //Setting name as player ID <-- FOR NOW
             userNameCol.id = gameState.players[index] + "-name";
+            userNameCol.classList.add("username-info");
         
             const userStateCol = document.createElement("td");
             userStateCol.id = gameState.players[index] + "-state";
+            userStateCol.classList.add("status-info");
 
             const userPlacementCol = document.createElement("td");
             userPlacementCol.id = gameState.players[index] + "-placement";
+            userPlacementCol.classList.add("placement-info");
 
             //Now we want to add append all the information to the row
             //And then add the row to the game table
@@ -492,6 +495,12 @@ function setUpHeaderButtons() {
     profileButton.classList.add("drop_down_button");
     logoutButton.innerText = "Logout";
     dropDownDiv.appendChild(logoutButton);
+}
+
+//Function for redirect main menu
+document.getElementById("logo").addEventListener("click", navigateMainPage);
+function navigateMainPage() {
+    window.location.href = HOME_PAGE;
 }
 
 //Function for header drop down

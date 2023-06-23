@@ -2,7 +2,6 @@
 <html>
     <head>
         <link rel="stylesheet" href="./styles.css" />
-        <script src="./multiplayerGame.js"></script>
     </head>
     <body>
         <!-- header for page-->    
@@ -17,38 +16,39 @@
         </header>         
 
 
-        <div id="queue-menu" style="display: none;">
-            <button id="queue-button">Join Game</button>
+        <main>
+            <div id="queue-menu" style="display: none;">
+                <button id="queue-button">Join Game</button>
 
-            <p id="error-message"></p>
-        </div>
-
-        <div id="game-main" style="display: none;">
-            <div id="game-timer">
-               <p id="counter"></p> 
+                <p id="error-message"></p>
             </div>
 
-            <div id="player-info">
-                <table id="info-table">
-                    <!--
-                    <tr>
-                        <td>Player name</td>
-                        <td>10001001001</td>
-                    </tr>
-                    -->
-
-                </table>
-            </div>
-
-            <div id="game-display">
-                <div id="text-display"></div>
-            
-                <div id="input-area">
-                    <textArea id="user-input" style="resize: none;" disabled></textArea>
+            <div id="game-main" style="display: none;">
+                <div id="game-timer">
+                    <p id="counter">...</p> 
                 </div>
-            </div> 
-            
 
+                <div id="player-info">
+                    <table id="info-table">
+                        <!--
+                        <tr>
+                            <td>Player name</td>
+                            <td>10001001001</td>
+                        </tr>
+                        -->
+
+                    </table>
+                </div>
+
+                <div id="game-display">
+                    <div id="text-display"></div>
+                
+                    <div id="input-area">
+                        <textArea id="user-input" style="resize: none;" disabled></textArea>
+                    </div>
+                </div> 
+            </main>
+            <script src="./multiplayerGame.js"></script>
         </div>
     </body>
 </html>

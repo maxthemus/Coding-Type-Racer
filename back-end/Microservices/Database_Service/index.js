@@ -200,6 +200,36 @@ app.post(PATH+"/user/password", (req, res) => {
     }
 });
 
+//End point for grabbing username 
+app.post(PATH+"/user/username", (req, res) => {
+    if("userId" in req.body) {
+        const sqlQuery = `SELECT username FROM users WHERE userId='${req.body.userId}'`;
+        dbCon.query(sqlQuery, (err, result) => {
+            if(err) {
+                res.send({
+                    type: "INVALID-USER"
+                });
+            } else {
+                if(result.length >= 1) {
+                    res.send({
+                        type: "VALID-USER",
+                        username: result[0].username
+                    });
+                } else {
+                    res.send({
+                        type: "INVALID-USER"
+                    });
+                }
+            }
+        });
+        
+    } else {
+        res.send({
+            type: "PAYLOAD"
+        });
+    }
+});
+
 //This end point is for validating a user account 
 //EG moving it from temp_users -> users
 app.get(PATH+"/user/validate", (req, res) => {

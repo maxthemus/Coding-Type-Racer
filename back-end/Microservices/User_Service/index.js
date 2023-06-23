@@ -204,17 +204,25 @@ app.get(PATH+"/email/verification", (req, res) => {
 //Get username information 
 app.get(PATH+"/info/username", (req, res) => {
     const userId = req.query.id;
-    console.log(userId);
-    let username = "";
     
-    for(let index in TEMP_USER_DB) {
-        if(TEMP_USER_DB[index].userId == userId) {
-            username = TEMP_USER_DB[index].username;
-            break;
-        }    
-    }
-    res.send({
-        username: username        
+    axios.post(DB_SERVICE+"/user/username", {
+        userId: userId
+    }).then((response) => {
+        if("type" in response.data) {
+            if(response.data.type == "VALID-USER") {
+                res.send({
+                    username: response.data.username
+                });
+            } else {
+                 res.send({
+                    username: "..."
+                });
+           }
+        }
+    }).catch(() => {
+        res.send({
+            username: "...",
+        });
     });
 });
 

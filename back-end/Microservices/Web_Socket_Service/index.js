@@ -111,8 +111,11 @@ socketServer.on("connection", (socket) => {
 
 
     socket.on("close", () => {
-        removeSocketFromMap(socket);
         console.log("Client connection has closed");
+        //We also want to send leaving message to server as losing conneciton is same as leaving game
+        handleUserLeaveGame(socket, CLIENT_SOCKETS.get(socket));
+
+        removeSocketFromMap(socket);
     });
 });
 
