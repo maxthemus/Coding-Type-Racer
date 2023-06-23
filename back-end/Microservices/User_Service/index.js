@@ -77,13 +77,13 @@ let INVALID_USER_DB = [
  *      THEN - Compare PASSWORDS - res results
  *      ELSE - res false 
  */
-app.post(PATH+"/login", (req, res) => {
+app.post(PATH+"/login", async (req, res) => {
     console.log(req.body);
     //Parsing body for username and password
     if(req.body != undefined) {
         if("username" in req.body && "password" in req.body) {
             //VALID PAYLOAD handle request
-            let validUserId = validateUser(req.body.username, req.body.password);
+            let validUserId = await validateUser(req.body.username, req.body.password);
 
             if(validUserId != null) {
                 //VALID USER create authentication JWT token

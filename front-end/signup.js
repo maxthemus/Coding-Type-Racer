@@ -5,8 +5,13 @@ const SIGNUP_PAGE = "./signup.html";
 
 const USER_SERVICE = "http://127.0.0.1:3051/api/user/signup";
 
+//Checking if user is already logged in
+window.addEventListener("load", () => {
+    if(window.sessionStorage.getItem("username") !== null) {
+        window.location.href = "HOME_PAGE";
+    }
+});
 
-console.log("Hello world!");
 
 document.getElementById("signup-form").addEventListener("submit", (event) => {
     event.preventDefault();

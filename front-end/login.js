@@ -5,6 +5,14 @@ const SIGNUP_PAGE = "./signup.html";
 
 const loginForm = document.getElementById("login-form");
 
+//Checking if user is already logged in
+window.addEventListener("load", () => {
+    if(window.sessionStorage.getItem("username") !== null) {
+        window.location.href = "HOME_PAGE";
+    }
+});
+
+
 loginForm.addEventListener("submit", (event) => {
     event.preventDefault();
     
