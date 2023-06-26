@@ -7,8 +7,10 @@ class GameState {
         this.playerPlacements = new Map();
         this.nextPlace = 1;
         this.text = text;
-        this.length = (text.split(" ")).length;
-    }
+        this.length = this.getTextLength(text);
+        this.type = "NORMAL"; //TYPES INCLUDE "NORMAL", "PRIVATE"
+        this.timer = null; //Set this variable to the setTimeout 
+    } 
 
     setState(newState) {
         this.state = newState;
@@ -33,6 +35,12 @@ class GameState {
             this.players.splice(index, 1);
             this.playerStatus.delete(userId);
             this.playerPlacements.delete(userId);
+
+            //If the there are no players currently then we want to stop the timer
+            if(this.players.length <= 0) {
+                clearTimeout(this.timer);
+            }
+
             return true;
         }     
         return false;
@@ -70,6 +78,31 @@ class GameState {
 
     playerFinished(userId) {
         this.playerPlacements.set(userId, this.nextPlace++);
+    }
+
+    getTextLength(text) {
+       let count = 0;
+        for(let index in text) {
+            switch(text[index]) {
+                case " ":
+                case ".":
+                case "(":
+                case "<":
+                    count++;
+                    break;
+            }
+        }
+        return count; 
+    }
+
+    /**
+     * 
+     * @param { function to start game} startFunction 
+     */
+    setStartTimer(startFunction, socket) {
+        this.timer = setTimeout(() => {
+            startFunction(this, socket);
+        }, 10000); //Currently auto starter is at 10 seconds
     }
 }
 

@@ -111,8 +111,13 @@ async function handleUserJoinGame(socket, userId) {
             type: "USER-JOINED",
             gameState: gameToJoin.stateToObj()
         }));
+
         
-        console.log(gameToJoin);
+        //AUTO GAME STARTER
+        //Updating game State on clients
+        if(gameToJoin.type == "NORMAL") {
+            gameAutoStarter(gameToJoin, socket);
+        }
     } else {
         //USER is in a game 
         console.log("User is already in a game");
@@ -218,9 +223,6 @@ function handleUserLeave(socket, userId) {
             userId: userId,
             message: "User has left the game"
         }));
-
-        //Updating game State on clients
-    
     } else {
         //We just want to remove the from the game map
         userToGame.delete(userId);
@@ -240,26 +242,7 @@ function handleUserStart(socket, userId) {
 
     //Checking if user is in game
     if(usersGame) {
-        //Checking if game is not running
-        if(usersGame.gameState != "RUNNING") {
-            //FOR DEBUGGING PURPOSES
-            if(usersGame.gameState == "EMPTY") {
-                //Game wasn't cleaned up correctly
-                console.log("Game is EMPTY");
-            }
-
-            //set gameState to "RUNNING"
-            usersGame.gameState = "RUNNING";
-
-            //Removing game from waiting games
-            removeWaitingGame(usersGame);
-
-            //Send response "GAME-START"
-            socket.send(JSON.stringify({
-                type: "GAME-START",
-                gameState: usersGame.stateToObj() 
-            }));
-        }
+        handleGameStart(usersGame, socket); 
     }
 }
 
@@ -306,7 +289,6 @@ function handleUserFinish(socket, userId) {
                 for(let index in usersGame.players) {
                     const userId = usersGame.players[index]; 
                     if(usersGame.playerStatus.get(userId) < usersGame.length) {
-                        console.log("User isn't finished!!!!!!!!");
                         gameFinished = false;
                         break;
                     }    
@@ -368,5 +350,43 @@ function removeWaitingGame(game) {
     if(game.state == "WAITING") {
         let index = waitingGames.indexOf(game);
         waitingGames.splice(index, 1);
+    }
+}
+
+
+//Function for auto starting games
+/**
+ * Basic logic for the game auto started v1.0
+ * 1- Check gameState for player count
+ * 2- If play count is > (min player count) then -> start 15 second game count down
+ * 3- send game start
+ */
+function gameAutoStarter(gameObj, socket) {
+    if(gameObj.players.length > 1) {
+        gameObj.setStartTimer(handleGameStart, socket); //Passing in callback function handleGameStart
+    }
+}
+
+
+//Handles starting the game and sending game informaiton out to players
+function handleGameStart(game, socket) {
+    if(game.gameState != "RUNNING") {
+        //FOR DEBUGGING PURPOSES
+        if(game.gameState == "EMPTY") {
+            //Game wasn't cleaned up correctly
+            console.log("Game is EMPTY");
+        }
+
+        //set gameState to "RUNNING"
+        game.gameState = "RUNNING";
+
+        //Removing game from waiting games
+        removeWaitingGame(game);
+
+        //Send response "GAME-START"
+        socket.send(JSON.stringify({
+            type: "GAME-START",
+            gameState: game.stateToObj() 
+        }));    
     }
 }

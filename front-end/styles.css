@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Kanit&display=swap');
 
 * {
-    font-family: 'Kanit', monospace; 
+    font-family: 'Kanit', monospace;
     /*font-family: monospace; */
     box-sizing: border-box;
     margin: 0;
@@ -254,18 +254,20 @@ main #info-table tr {
     font-size: 20px;
 }
 
-main #info-table .username-info {
+.username-info {
     font-size: 20px;
     width: 20%;
 }
 
-main #info-table .status-info {
+.status-info {
     width: 60%;
     padding-left: 5px;
+    font-family: monospace;
 }
 
-main #info-table .placement-info {
+.placement-info {
     width: 20%;
+    text-align: center;
 }
 
 main #text-display span {

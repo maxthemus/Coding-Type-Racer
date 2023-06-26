@@ -10,6 +10,9 @@ let countValue; //For game start countdown interval reference
 let startTime;
 let state;
 
+//Game variables
+let gameLength;
+
 //Event listener for 
 window.addEventListener("load", () => {
     //Checking if user is logged in
@@ -84,7 +87,7 @@ function handleSocketMessage(event) {
 
 //Function handle closing socket
 function handleSocketClose() {
-    window.location.href = MAIN_PAGE;
+    window.location.href = HOME_PAGE;
 }
 
 //Function handles user joining a game
@@ -102,6 +105,9 @@ function handleJoinGame(gameState) {
         
         //Display the text for the game
         displayGameText(gameState.text);
+        
+        //Updating game length
+        updateGameLength(gameState.text);
         
         inGame = true; //Setting in game 
     }
@@ -203,8 +209,18 @@ function updateGameStateDisplay(gameState) {
         const stateTag = document.getElementById(key +"-state");
         if(stateTag != null) {
             let state = "";
-            for(let i = 0; i < value; i++) {
-                state += "10101011";
+            console.log(value + " / " + gameLength);
+            let percentage = (value/gameLength);
+            console.log(gameLength);
+            console.log("PERcent + " + percentage);
+
+            //State character length must be 33 characters 
+            let characterCount = ((percentage) * 32);
+            console.log("Character count = " + characterCount);
+
+            for(let i = 0; i < characterCount; i++) {
+                //get a random number 1 or 0                
+                state += Math.round(Math.random()) + "";
             }
             stateTag.innerText = state;
         }
@@ -226,7 +242,6 @@ function joinQueue() {
 
 //Updated the text in span
 function displayGameText(text) {
-    console.log("UPDATING GAME TEXT!!!!!!!!!!!");
     const displayArea = document.getElementById("text-display");
     text.split('').forEach(character => {
         const spanTag = document.createElement("span");
@@ -321,19 +336,28 @@ function handleUserCharacterInput(event) {
         } else {
             switch(event.data) {
                 case " ":
+                case ".":
+                case "(":
+                case "<":
                     //Reset input because new word
                     indexPtr = (indexPtr + arrayValue.length);
                     document.getElementById("user-input").value = "";
                     
                     state++; //incrementing state
                     updatePlayerStatus();
-                   break;
+                    break;
+                case null:
+                    //Checking if input was new line
+                    if(event.inputType == "insertLineBreak") {
+                        console.log("NEW LINE");
+                    }
+                    break;
             }
         }
     }
 
     //Handling backspace
-    if(event.data == null) {
+    if(event.inputType == "deleteContentBackward") {
         arrayQuote[indexPtr + arrayValue.length].classList.remove("correct");
         arrayQuote[indexPtr + arrayValue.length].classList.add("incorrect");
     }
@@ -623,4 +647,21 @@ function clearGameData() {
 function displayGameMain() {
     document.getElementById("game-display").style.display = "flex";
     document.getElementById("text-display").style.display = "block";
+}
+
+
+function updateGameLength(text) {
+    let count = 0;
+    for(let index in text) {
+        switch(text[index]) {
+            case " ":
+            case ".":
+            case "(":
+            case "<":
+                count++;
+                break;
+        }
+    }
+
+    gameLength = count+1; //+1 because the final character
 }
