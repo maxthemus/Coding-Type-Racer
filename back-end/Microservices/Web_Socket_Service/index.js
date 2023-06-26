@@ -99,6 +99,7 @@ socketServer.on("connection", (socket) => {
                        return;
                     case "FINISHED":
                         handleGameFinshed(socket, CLIENT_SOCKETS.get(socket));
+                        return;
                 }
             }
             socket.send(JSON.stringify({
@@ -110,8 +111,11 @@ socketServer.on("connection", (socket) => {
 
 
     socket.on("close", () => {
-        removeSocketFromMap(socket);
         console.log("Client connection has closed");
+        //We also want to send leaving message to server as losing conneciton is same as leaving game
+        handleUserLeaveGame(socket, CLIENT_SOCKETS.get(socket));
+
+        removeSocketFromMap(socket);
     });
 });
 
@@ -216,6 +220,7 @@ function handleUserJoinGame(socket, userId) {
 //Handling client socket connected to the GAME_SERVICE
 gameServiceSocket.on("message", (data) => {
     const message = JSON.parse(data);
+    console.log(message);
 
     //Getting type of message 
     if("type" in message) {
@@ -365,6 +370,7 @@ function handleGameFinshed(socket, userId) {
 
 function finishedGameResponse(userId, placement, gameState) {
     if(ID_SOCKET.has(userId)) {
+        console.log("SENDING RES");
         const socket = ID_SOCKET.get(userId);
 
         const finishedObj = {

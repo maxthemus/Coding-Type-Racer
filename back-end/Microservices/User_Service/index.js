@@ -14,6 +14,7 @@ const PORT = process.env.PORT;
 const PATH = process.env.API_PATH;
 const EMAIL = process.env.EMAIL;
 const PASS = process.env.PASS;
+const DB_SERVICE = process.env.DB_SERVICE;
 
 //Setting up cors
 const cors = require("cors");
@@ -33,10 +34,8 @@ const key = fs.readFileSync("../../Authentication/secret.key", "utf-8").trim();
 //Verification Key
 const verKey = fs.readFileSync("../../Authentication/secret_one.key", "utf-8").trim();
 
-
 //JSON web tokens
 const jwt = require("jsonwebtoken");
-const { PassThrough } = require('stream');
 
 //UUID v4 for userId
 const uuid = require("uuid");
@@ -44,12 +43,22 @@ const uuid = require("uuid");
 //node mailer set up
 const nodemailer = require("nodemailer");
 
+//Setting up bycrypt
+const bcrypt = require("bcrypt");
+
+//Setting up axios for http requests
+const axios = require("axios");
+
 
 //#TEMP VARIABLES TO REPLICATE DB
 let TEMP_USER_DB = [{
     userId: "4b9e2dc4-19d4-4b18-85ee-14a2a356be0b",
     username: "admin",
     password: "password"
+}, {
+    userId: "4b9e2dc4-19d4-4b18-85ee-14a2a356be0f",
+    username: "test",
+    password: "test"
 }];
 
 let INVALID_USER_DB = [
@@ -68,17 +77,17 @@ let INVALID_USER_DB = [
  *      THEN - Compare PASSWORDS - res results
  *      ELSE - res false 
  */
-app.post(PATH+"/login", (req, res) => {
+app.post(PATH+"/login", async (req, res) => {
+    console.log(req.body);
     //Parsing body for username and password
     if(req.body != undefined) {
         if("username" in req.body && "password" in req.body) {
             //VALID PAYLOAD handle request
-            let validUser = validateUser(req.body.username, req.body.password);
+            let validUserId = await validateUser(req.body.username, req.body.password);
 
-            if(validUser != null) {
-                console.log(validUser.userId);
+            if(validUserId != null) {
                 //VALID USER create authentication JWT token
-                const token = jwt.sign({userId: validUser.userId}, key);
+                const token = jwt.sign({userId: validUserId}, key);
 
                 res.status(200).send({
                     loggedIn: true,
@@ -179,32 +188,42 @@ app.get(PATH+"/email/verification", (req, res) => {
     const token = req.query.token;
     //Verifiying token
     try {
-        const decoded = jwt.verify(token, verKey);
-    
-        res.redirect("http://localhost/code-racer/front-end/index.html");
-
-        //Now we want to take the user from the temp 
-        let userIndex = -1;
-        for(let index in TEMP_USER_DB) {
-            if(INVALID_USER_DB[index].email == decoded.email) {
-                userIndex = index;
-                break;
+        jwt.verify(token, verKey, (err,decoded) => {
+            if(err) {
+                throw new Error();
             }
-        }        
-
-        if(userIndex != -1) {
-            const validatedUser = INVALID_USER_DB.splice(userIndex, 1);
-            TEMP_USER_DB.push(validatedUser[0]);
-
-            console.log(TEMP_USER_DB);
-            console.log("----");
-            console.log(INVALID_USER_DB);
-        } else {
-            throw new Error();
-        }
+            res.redirect("http://localhost/code-racer/front-end/index.html");
+            axios.get(DB_SERVICE+"/user/validate?email="+decoded.email); 
+        });
     } catch(err) {
+        console.log("error");
         res.redirect("http://localhost/code-racer/front-end/error.html");
     }
+});
+
+//Get username information 
+app.get(PATH+"/info/username", (req, res) => {
+    const userId = req.query.id;
+    
+    axios.post(DB_SERVICE+"/user/username", {
+        userId: userId
+    }).then((response) => {
+        if("type" in response.data) {
+            if(response.data.type == "VALID-USER") {
+                res.send({
+                    username: response.data.username
+                });
+            } else {
+                 res.send({
+                    username: "..."
+                });
+           }
+        }
+    }).catch(() => {
+        res.send({
+            username: "...",
+        });
+    });
 });
 
 
@@ -217,14 +236,13 @@ app.listen(PORT, () => {
 
 
 //FUNCTIONS
-
-
 /**
  * Checks users cridentails using the databse service 
  * @param {string} username username of user
  * @param {string} password password of user
  */
 function validateUser(username, password) {
+    /*
     for(let index in TEMP_USER_DB) {
         let user = TEMP_USER_DB[index];
 
@@ -234,8 +252,22 @@ function validateUser(username, password) {
             }
         }
     }
-    
-    return null; //Invalid user
+    */
+    return new Promise((resolve) => {
+        axios.post(DB_SERVICE+"/user/password", {username: username}).then(async(res) => {
+            if("validUser" in res.data) {
+                if(res.data.validUser) {
+                    console.log("HERE");
+                    //We are going to user bcrypt to verify the password
+                    const valid = await bcrypt.compare(password, res.data.password); 
+                    if(valid) {
+                        console.log(valid);
+                        return resolve(res.data.userId); //ID
+                    }
+                }
+            }
+        });
+    });
 }
 
 /**
@@ -257,7 +289,8 @@ function validateSignUpPayload(payload) {
  * @returns boolean  
  */
 function validatePassword(password) {
-    return true;
+    const regexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,16}$/
+    return regexPattern.test(password);
 }
 
 /**
@@ -266,6 +299,7 @@ function validatePassword(password) {
  * @returns boolean based on if username exists
  */
 function checkUsernameTaken(username) {
+    /* OLD VERSION
     for(let index in TEMP_USER_DB) {
         if(TEMP_USER_DB[index].username == username) {
             return true; //Username taken
@@ -277,8 +311,18 @@ function checkUsernameTaken(username) {
             return true;
         }
     }
-
-    return false; //Username NOT taken 
+    */
+    axios.post(DB_SERVICE+"/check/username", {username: username}).then((res) => {
+        console.log("CHECKING USERNAME");
+        console.log(res.data);
+        if("usernameTaken" in res.data) {
+            return res.data.usernameTaken;
+        } else {
+            return true;
+        }
+    }).catch(() => {
+        return true;
+    });
 }
 
 /** NEEDS IMPLEMENT
@@ -286,35 +330,51 @@ function checkUsernameTaken(username) {
  * @param {Object} user 
  * @returns boolean
  */
-function signUpUser(user) {
+async function signUpUser(user) {
     const id = uuid.v4(); //Generate UUID
+    const hashedPassword = await hashPassword(user.password); //Waiting for password to be hashed
 
-    const userObj = {
-        userId: id,
-        username: user.username,
-        password: user.password,
-        email: user.email
+    //Checking if hash failed
+    if(!hashedPassword) {
+        return false;
+    } else {
+        const userObj = {
+            userId: id,
+            username: user.username,
+            password: hashedPassword,
+            email: user.email
+        }
+        //TEMP_USER_DB.push(userObj);
+        INVALID_USER_DB.push(userObj);
+
+        //Sending POST request to insert into temp users
+        axios.post(DB_SERVICE+"/add/user", userObj).then((res) => {
+            console.log(res.data);
+            if("type" in res.data) {
+                if(res.data.type == "USER-CREATED") {
+                    return true;
+                }
+            }
+        }).catch((err) => {
+            console.log(err.message);
+            return false;
+        });
+    
+        return false;//Invalid response package
     }
-    //TEMP_USER_DB.push(userObj);
-    INVALID_USER_DB.push(userObj);
-
-    return true;
 }
 
 //Checks if the email is already taken
 function checkEmailTaken(email) {
-    for(let index in INVALID_USER_DB) {
-        if(INVALID_USER_DB[index].email == email) {
-            return true;
+    //Sending POST request to db to check for email is taken
+    axios.post(DB_SERVICE+"/check/email", {email: email}).then(() => {
+        if("emailTaken" in res.data) {
+            return res.emailTaken;
         }
-    }
-
-    for(let index in TEMP_USER_DB) {
-        if(TEMP_USER_DB[index].email == email) {
-            return true;
-        }
-    }
-    return false;
+        return true; //Else email is taken
+    }).catch((err) => {
+        return true;  
+    });
 }
 
 
@@ -331,7 +391,6 @@ async function sendVerificationEmail(email, token) {
 
     });
 
-    console.log(token);
     const mailOptions = {
         to: email,
         subject: 'Coding Racer Email Verificaiton',
@@ -340,9 +399,21 @@ async function sendVerificationEmail(email, token) {
 
     try {
         const info = await transporter.sendMail(mailOptions);
-        console.log(info.messageId);
     } catch(err) {
         console.log(err);
         console.log("Error sending email");
     }
+}
+
+//Function to hash the password
+function hashPassword(password) {
+    return new Promise((res, rej) => {
+        bcrypt.hash(password, 5, (err, hash) => {
+            if(err) {
+                rej(false);
+            } else {
+                res(hash);
+            }
+        });
+    });
 }

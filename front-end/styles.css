@@ -1,4 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Kanit&display=swap');
+
 * {
+    font-family: 'Kanit', monospace;
+    /*font-family: monospace; */
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -12,7 +16,8 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    background-color: rgb(0, 0, 0);
+    /*background-color: rgb(0, 0, 0); */
+    background-color: #222222;
 }
 
 body, .quote-input {
@@ -80,4 +85,210 @@ font-weight: bold;
 
 .normal {
     color: rgb(255, 255, 255);
+}
+
+
+/* MAX updates under here */
+.arrow {
+    border: solid black;
+    border-width: 0 3px 3px 0;
+    display: inline;
+    padding: 3px;
+}
+
+
+header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 60px;
+    background-color: #1c5b97;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-left: 50px;
+    padding-right: 50px;
+}
+
+header #logo {
+    border: none;
+    background-color: rgba(0, 0, 0, 0);
+    height: 100%;
+    padding-left: 10px;
+    padding-right: 10px;
+
+}
+
+header .header_logo {
+    color: white;
+    font-size: 20px;
+    user-select: none;
+}
+
+header .header_user {
+    height: 100%;
+    display: flex;
+    width: 200px;
+}
+
+
+header .header_user button, .drop_down_button {
+    border:none;
+    height: 100%;
+    color: white;
+    width: 100px;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+header .header_user button:hover, .drop_down_button:hover {
+    font-weight: bold;
+    background-color: rgba(10, 70, 126, 0.5);
+}
+
+/* FORM STYLES */
+form {
+    width: 500px;
+    height: 500px;
+    padding: 75px;
+    border-radius: 20px;
+    background-color:rgb(10, 70, 126); 
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+form label {
+    font-size: 20px;
+}
+
+form input {
+    border: none;
+    width: 300px;    
+    height: 40px;
+    background-color: rgba(0,0,0,0);
+    border-bottom: 1px solid white;
+    color: white;
+    font-size: 20px;
+    text-align: center;
+}
+form input:focus {
+    outline: none;
+}
+
+form #submit-button {
+    border: none;
+    width: 300px;
+    height: 50px;
+    color: white;
+    background-color: #00202A;
+}
+form #submit-button:hover {
+    font-weight: bold;
+}
+
+/* Styles for main elements */
+main {
+    width: 600px;
+    height: 600px;
+    padding: 40px;
+    border-radius: 40px;
+    background-color: #384242;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    row-gap: 10px;
+}
+
+main button {
+    width: 100%;
+    height: 100%;
+    font-size: 40px;
+    background-color: #1c5b97;
+    border: none;
+    color: white;
+}
+
+main button:hover {
+    background-color: rgba(10, 70, 126, 0.5);
+    font-weight: bold;
+}
+
+/* styles for start button */
+#start-button {
+    align-self: flex-end;
+    height: 50px;
+    font-size: 30px;
+}
+
+/* styles for game div */
+main #game-main {
+    height: 100%;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 10%;
+    align-items: center;
+}
+
+main #game-display {
+    flex-direction: column;
+    align-items: center;
+}
+
+main #player-info {
+    width: 100%;
+} 
+
+main #game-timer {
+}
+
+/* table styles for game information */
+main #info-table {
+    width: 100%;
+}
+
+main #info-table tr {
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+.username-info {
+    font-size: 20px;
+    width: 20%;
+}
+
+.status-info {
+    width: 60%;
+    padding-left: 5px;
+    font-family: monospace;
+}
+
+.placement-info {
+    width: 20%;
+    text-align: center;
+}
+
+main #text-display span {
+    font-size: 30px;
+}
+
+main #input-area, main #user-input {
+    width: 100%;
+}
+
+main #user-input {
+    width: 100%;
+    resize: none;
+    color: green;
+    text-align: left;
+    background-color: rgba(0,0,0,0);
+    font-size: 30px;
+    height: 50px;
+}
+
+/* styles for game over buttons */
+main #game-over #playagain-button {
+    margin-bottom: 5px;
 }

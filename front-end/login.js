@@ -1,7 +1,17 @@
 const USER_SERVICE_API = "127.0.0.1:3051/api/user/login";
 const HOME_PAGE = "./index.html";
+const LOGIN_PAGE = "./login.html";
+const SIGNUP_PAGE = "./signup.html";
 
 const loginForm = document.getElementById("login-form");
+
+//Checking if user is already logged in
+window.addEventListener("load", () => {
+    if(window.sessionStorage.getItem("username") !== null) {
+        window.location.href = "HOME_PAGE";
+    }
+});
+
 
 loginForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -50,3 +60,14 @@ function handleFailLogin() {
     //Display invalid text
     document.getElementById("form-element").innerText = "Invalid Username or Password";
 }
+
+
+document.getElementById("logo").addEventListener("click", navigateMainPage);
+
+function navigateMainPage() {
+    window.location.href = HOME_PAGE;
+}
+
+document.getElementById("button-signup").addEventListener("click", () => {
+    window.location.href = SIGNUP_PAGE;
+});

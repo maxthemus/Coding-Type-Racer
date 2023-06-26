@@ -8,6 +8,7 @@
 //Configuration File
 require('dotenv').config();
 const PORT = process.env.PORT;
+const DB_SERVICE = process.env.DB_SERVICE;
 
 //Importing GameState class
 const GameState = require('./GameState');
@@ -19,6 +20,10 @@ const server = http.createServer();
 //Web socket Server
 const WebSocket = require("ws");
 const socketServer = new WebSocket.Server({ server });
+
+//Http request
+const axios = require("axios");
+
 
 //Starting server
 server.listen(PORT, () => {
@@ -86,18 +91,18 @@ const emptyGames = []; //FOR DEBUGGING should probably remove
  * @param {socket} socket 
  * @param {userId as String} userId 
  */
-function handleUserJoinGame(socket, userId) {
+async function handleUserJoinGame(socket, userId) {
     //Check if the user is already in a game
     if(!userToGame.has(userId)) {
         //USER is not in a game 
 
         //Find game for user to join
-        let gameToJoin = searchForGame();
+        let gameToJoin = await Promise.resolve(searchForGame());
         if(!gameToJoin) { //Checking if game was found
             //Game was not found
-            gameToJoin = createGame();
+            gameToJoin = await Promise.resolve(createGame());
         }  
-        
+            
         //JOIN user to game
         joinGame(userId, gameToJoin);
 
@@ -106,8 +111,16 @@ function handleUserJoinGame(socket, userId) {
             type: "USER-JOINED",
             gameState: gameToJoin.stateToObj()
         }));
+
+        
+        //AUTO GAME STARTER
+        //Updating game State on clients
+        if(gameToJoin.type == "NORMAL") {
+            gameAutoStarter(gameToJoin, socket);
+        }
     } else {
         //USER is in a game 
+        console.log("User is already in a game");
     }
 }
 
@@ -117,10 +130,13 @@ function handleUserJoinGame(socket, userId) {
  * @returns { GameState || Null } gameState object
  */
 function searchForGame() {
-    if(waitingGames.length > 0) {
-        return waitingGames[0];
-    }    
-    return null;
+    return new Promise((res, rej) => {
+        if(waitingGames.length > 0) {
+            res(waitingGames[0]);
+        } else {
+            res(null);
+        }
+    });
 }
 
 /**
@@ -128,11 +144,20 @@ function searchForGame() {
  * @returns { GameState } gameState object
  */
 function createGame() {
-    const gameId = uuidv4();
-    const newGame = new GameState(gameId, "test text for game");
-    idToGame.set(gameId, newGame);
-    waitingGames.push(newGame);
-    return newGame;
+    return new Promise((res, rej) => {
+        axios.get(DB_SERVICE+"/text/random").then((response) => {
+            const data = response.data;
+            const gameId = uuidv4();
+            const newGame = new GameState(gameId, data.text);
+            idToGame.set(gameId, newGame);
+            waitingGames.push(newGame);
+            res(newGame);
+        }).catch((err) => {
+            console.log("ERROR");
+            console.log(err);
+            res(null);
+        });
+    });
 }
 
 
@@ -180,10 +205,7 @@ function handleUserLeave(socket, userId) {
             idToGame.delete(gameId);
 
             //removing games from waiting agmes
-            if(usersGame.state == "WAITING") {
-                let index = waitingGames.indexOf(usersGame);
-                waitingGames.splice(index, 1);
-            }
+            removeWaitingGame(usersGame); 
        } else {
             //We want to send an update of the gameState back to users
             socket.send(JSON.stringify({
@@ -201,9 +223,9 @@ function handleUserLeave(socket, userId) {
             userId: userId,
             message: "User has left the game"
         }));
-
-        //Updating game State on clients
-    
+    } else {
+        //We just want to remove the from the game map
+        userToGame.delete(userId);
     }
 }
 
@@ -220,23 +242,7 @@ function handleUserStart(socket, userId) {
 
     //Checking if user is in game
     if(usersGame) {
-        //Checking if game is not running
-        if(usersGame.gameState != "RUNNING") {
-            //FOR DEBUGGING PURPOSES
-            if(usersGame.gameState == "EMPTY") {
-                //Game wasn't cleaned up correctly
-                console.log("Game is EMPTY");
-            }
-
-            //set gameState to "RUNNING"
-            usersGame.gameState = "RUNNING";
-
-            //Send response "GAME-START"
-            socket.send(JSON.stringify({
-                type: "GAME-START",
-                gameState: usersGame.stateToObj() 
-            }));
-        }
+        handleGameStart(usersGame, socket); 
     }
 }
 
@@ -250,7 +256,7 @@ function handleUserFinish(socket, userId) {
     const gameId = userToGame.get(userId);
     const usersGame = idToGame.get(gameId);
     
-    console.log(idToGame);
+    //console.log(idToGame);
 
     //Checking if user is in game
     if(usersGame) {
@@ -277,6 +283,21 @@ function handleUserFinish(socket, userId) {
                     type: "GAME-UPDATE",
                     gameState: usersGame.stateToObj()
                 }));
+
+                //Now we want to check to see if all users have finihsed
+                let gameFinished = true; //we assume the game is finished
+                for(let index in usersGame.players) {
+                    const userId = usersGame.players[index]; 
+                    if(usersGame.playerStatus.get(userId) < usersGame.length) {
+                        gameFinished = false;
+                        break;
+                    }    
+                }
+
+                //Checking to see if the game is finished if so we need to clean up the game
+                if(gameFinished) {
+                    handleGameCleanUp(usersGame);
+                }
             } 
         }
     } 
@@ -306,5 +327,66 @@ function handleUserUpdate(socket, userId, updateStatus) {
                 gameState: usersGame.stateToObj()
             }));
         }
+    }
+}
+
+function handleGameCleanUp(game) {
+    game.gameState = "EMPTY"; //Setting game state to EMPTY
+    emptyGames.push(game); //Adding usersGame to empty array
+
+    /** TODO -- CLEAN UP EMPTY GAMES */
+    //Removing gameState from map
+    idToGame.delete(game.id);
+
+    //removing games from waiting agmes
+    if(game.state == "WAITING") {
+        let index = waitingGames.indexOf(game);
+        waitingGames.splice(index, 1);
+    } 
+}
+
+function removeWaitingGame(game) {
+    //removing games from waiting agmes
+    if(game.state == "WAITING") {
+        let index = waitingGames.indexOf(game);
+        waitingGames.splice(index, 1);
+    }
+}
+
+
+//Function for auto starting games
+/**
+ * Basic logic for the game auto started v1.0
+ * 1- Check gameState for player count
+ * 2- If play count is > (min player count) then -> start 15 second game count down
+ * 3- send game start
+ */
+function gameAutoStarter(gameObj, socket) {
+    if(gameObj.players.length > 1) {
+        gameObj.setStartTimer(handleGameStart, socket); //Passing in callback function handleGameStart
+    }
+}
+
+
+//Handles starting the game and sending game informaiton out to players
+function handleGameStart(game, socket) {
+    if(game.gameState != "RUNNING") {
+        //FOR DEBUGGING PURPOSES
+        if(game.gameState == "EMPTY") {
+            //Game wasn't cleaned up correctly
+            console.log("Game is EMPTY");
+        }
+
+        //set gameState to "RUNNING"
+        game.gameState = "RUNNING";
+
+        //Removing game from waiting games
+        removeWaitingGame(game);
+
+        //Send response "GAME-START"
+        socket.send(JSON.stringify({
+            type: "GAME-START",
+            gameState: game.stateToObj() 
+        }));    
     }
 }
