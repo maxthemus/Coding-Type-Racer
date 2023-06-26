@@ -429,6 +429,8 @@ function startGame() {
 
 function gameFinished() {
     document.getElementById("user-input").disabled = true; //Disabling the input
+    document.getElementById("user-input").removeEventListener("input", handleUserCharacterInput);
+
     clearInterval(countFunc); //Stoping count function calls
 
     sendGameFinished();    

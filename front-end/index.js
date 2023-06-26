@@ -2,6 +2,7 @@
 const LOGIN_PAGE = "./login.html";
 const SIGNUP_PAGE = "./signup.html";
 const MULTIPLAYER_GAME_PAGE = "./multiplayerGame.html";
+const SINGLEPLAYER_GAME_PAGE = "./singleplayerGame.html";
 let loggedIn = false; //By default user isn't logged in
 
 //Function called onload of home page
@@ -83,11 +84,8 @@ function redirectSignUpPage() {
 document.getElementById("singlePlayer-button").addEventListener("click", handleJoinSinglePlayer);
 //Function for handling starting singleplayer
 function handleJoinSinglePlayer() {
-    if(loggedIn) {
-
-    } else {
-        redirectLoginPage();
-    }
+    console.log("SINGLEPLAYER");
+    window.location.href = SINGLEPLAYER_GAME_PAGE;
 }
 
 document.getElementById("multiPlayer-button").addEventListener("click", handleJoinMultiPlayer);

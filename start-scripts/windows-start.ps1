@@ -12,7 +12,7 @@ cd "..\Database_Service\"
 $processes += Start-Process -FilePath "node" -ArgumentList "index.js"  
 
 cd "..\Game_Service\"
-#$processes += Start-Process -FilePath "node" -ArgumentList "index.js"  
+$processes += Start-Process -FilePath "node" -ArgumentList "index.js"  
 
 cd "..\Web_Socket_Service\"
 $processes += Start-Process -FilePath "node" -ArgumentList "index.js" 

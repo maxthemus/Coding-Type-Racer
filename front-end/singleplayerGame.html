@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <!-- header for page-->
+        <header id="home-header">
+            <button id="logo">
+                <h3 class="header_logo">The Racing Coder</h3>
+            </button>
+        
+            <div class="header_user" id="user-info">
+        
+            </div>
+        </header>
+
+        <main>
+            <div id="menu">
+                <h3 style="text-align: center;">Single Player</h3>
+                <p>Language</p>
+                <select name="languages" id="language-select">
+                    <option value="RANDOM">Random</option>
+                    <option value="PYTHON">Python</option>
+                    <option value="JAVASCRIPT">Javascript</option>
+                    <option value="JAVA">Java</option>
+                    <option value="C">C</option>
+                </select>                
+
+                <p>Difficulty</p>
+                <select name="difficulty" id="difficulty-select">
+                    <option value="RANDOM">Random</option>
+                    <option value="BEGINNER">Beginner</option>
+                    <option value="INTERMEDIATE">Intermediate</option>
+                    <option value="ADVANCED">Advanced</option>
+                    <option value="EXPERT">Expert</option>
+                </select>
+
+                <button id="play-button">Play</button> 
+            </div>
+
+            <div id="game-main" style="display: none;">
+                <div id="game-settings">
+                    <div class="setting-text">
+                        <p class="setting-title">Language</p>
+                        <p id="game-language">Random</p>
+                    </div>
+                    
+                    <div id="game-timer">
+                        <p id="counter">...</p> 
+                    </div>
+
+                    <div class="setting-text">
+                        <p class="setting-title">Difficulty</p>
+                        <p id="game-difficulty">Random</p>
+                    </div>
+                </div> 
+
+                <div id="game-display">
+                    <div id="text-display"></div>
+
+                    <div id="input-area">
+                        <textArea class="text_area" id="user-input" disabled></textArea>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <script src="./singleplayerGame.js"></script> 
+    </body>
+</html>
