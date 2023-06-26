@@ -48,7 +48,7 @@ const bcrypt = require("bcrypt");
 
 //Setting up axios for http requests
 const axios = require("axios");
-const { resolve } = require('path');
+
 
 //#TEMP VARIABLES TO REPLICATE DB
 let TEMP_USER_DB = [{
@@ -268,7 +268,6 @@ function validateUser(username, password) {
             }
         });
     });
-    return resolve(null);
 }
 
 /**
@@ -336,7 +335,7 @@ async function signUpUser(user) {
     const hashedPassword = await hashPassword(user.password); //Waiting for password to be hashed
 
     //Checking if hash failed
-    if(!hashPassword) {
+    if(!hashedPassword) {
         return false;
     } else {
         const userObj = {

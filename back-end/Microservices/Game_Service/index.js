@@ -8,6 +8,7 @@
 //Configuration File
 require('dotenv').config();
 const PORT = process.env.PORT;
+const DB_SERVICE = process.env.DB_SERVICE;
 
 //Importing GameState class
 const GameState = require('./GameState');
@@ -19,6 +20,10 @@ const server = http.createServer();
 //Web socket Server
 const WebSocket = require("ws");
 const socketServer = new WebSocket.Server({ server });
+
+//Http request
+const axios = require("axios");
+
 
 //Starting server
 server.listen(PORT, () => {
@@ -86,18 +91,18 @@ const emptyGames = []; //FOR DEBUGGING should probably remove
  * @param {socket} socket 
  * @param {userId as String} userId 
  */
-function handleUserJoinGame(socket, userId) {
+async function handleUserJoinGame(socket, userId) {
     //Check if the user is already in a game
     if(!userToGame.has(userId)) {
         //USER is not in a game 
 
         //Find game for user to join
-        let gameToJoin = searchForGame();
+        let gameToJoin = await Promise.resolve(searchForGame());
         if(!gameToJoin) { //Checking if game was found
             //Game was not found
-            gameToJoin = createGame();
+            gameToJoin = await Promise.resolve(createGame());
         }  
-        
+            
         //JOIN user to game
         joinGame(userId, gameToJoin);
 
@@ -106,7 +111,7 @@ function handleUserJoinGame(socket, userId) {
             type: "USER-JOINED",
             gameState: gameToJoin.stateToObj()
         }));
-
+        
         console.log(gameToJoin);
     } else {
         //USER is in a game 
@@ -120,10 +125,13 @@ function handleUserJoinGame(socket, userId) {
  * @returns { GameState || Null } gameState object
  */
 function searchForGame() {
-    if(waitingGames.length > 0) {
-        return waitingGames[0];
-    }    
-    return null;
+    return new Promise((res, rej) => {
+        if(waitingGames.length > 0) {
+            res(waitingGames[0]);
+        } else {
+            res(null);
+        }
+    });
 }
 
 /**
@@ -131,11 +139,20 @@ function searchForGame() {
  * @returns { GameState } gameState object
  */
 function createGame() {
-    const gameId = uuidv4();
-    const newGame = new GameState(gameId, "test text for game");
-    idToGame.set(gameId, newGame);
-    waitingGames.push(newGame);
-    return newGame;
+    return new Promise((res, rej) => {
+        axios.get(DB_SERVICE+"/text/random").then((response) => {
+            const data = response.data;
+            const gameId = uuidv4();
+            const newGame = new GameState(gameId, data.text);
+            idToGame.set(gameId, newGame);
+            waitingGames.push(newGame);
+            res(newGame);
+        }).catch((err) => {
+            console.log("ERROR");
+            console.log(err);
+            res(null);
+        });
+    });
 }
 
 
