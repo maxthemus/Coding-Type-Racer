@@ -226,6 +226,7 @@ function joinQueue() {
 
 //Updated the text in span
 function displayGameText(text) {
+    console.log("UPDATING GAME TEXT!!!!!!!!!!!");
     const displayArea = document.getElementById("text-display");
     text.split('').forEach(character => {
         const spanTag = document.createElement("span");
@@ -411,6 +412,10 @@ function gameFinished() {
     document.getElementById("game-display").style.display = "none"; //Removing game info from display
     clearGameInfo(); //Removing game information from fields
 
+    //Displaying game over buttons
+    displayGameOverButtons();
+
+    inGame = false; //Setting in game to false 
 }
 
 function sendGameFinished() {
@@ -527,4 +532,95 @@ function handleLogout() {
 
 function handleMyProfile() {
     console.log("My profile");
+}
+
+function displayGameOverButtons() {
+    //Creating div for buttons
+    const gameOverDiv = document.createElement("div");
+    gameOverDiv.id = "game-over";
+
+    //Creating play again button
+    const playAgain = document.createElement("button");
+    playAgain.id = "playagain-button";
+    playAgain.innerText = "Play Again";
+
+    //Creating Main Menu button
+    const menuButton = document.createElement("button");
+    menuButton.id = "menu-button";
+    menuButton.innerText = "Main Menu";
+
+    //Adding event handlers to buttons
+    menuButton.addEventListener("click", navigateMainPage);
+    playAgain.addEventListener("click", handlePlayAgain);
+
+
+    //Appending buttons to div
+    gameOverDiv.appendChild(playAgain);
+    gameOverDiv.appendChild(menuButton);
+
+    //Appending game over div to main game
+    document.getElementById("game-main").appendChild(gameOverDiv);
+}
+
+function removeGameOverButtons() {
+    //Removing event listeners
+    const gameOverDiv = document.getElementById("game-over");
+    
+    if(gameOverDiv != null) {
+        //Removing event listeners
+        document.getElementById("playagain-button").removeEventListener("click", navigateMainPage);        
+        document.getElementById("menu-button").removeEventListener("click", handlePlayAgain);
+
+        //Removing children from node
+        while(gameOverDiv.firstChild) {
+            gameOverDiv.removeChild(gameOverDiv.firstChild);
+        }
+
+        //Removing node
+        gameOverDiv.remove();
+    } else {
+        console.log("ERROR - Removing game over buttons");
+    }
+}
+
+function handlePlayAgain() {
+    //removing game over buttons
+    removeGameOverButtons();    
+
+    //Clearing game data
+    clearGameData();
+
+    //Displyaing input field
+    displayGameMain();
+
+    //First we want to leave the game
+    leaveGame();
+
+    //Then we want to join the queue again
+    joinQueue();
+}
+
+function leaveGame() {
+    if(socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: "LEAVE"
+        }));
+    } else {
+        console.log("Socket is closed || ERROR");
+    }
+}
+
+function clearGameData() {
+    document.getElementById("counter").innerText = "...";
+
+    //Removing all information in info table
+    const infoTable = document.getElementById("info-table");
+    while(infoTable.firstChild) {
+        infoTable.removeChild(infoTable.firstChild);
+    }
+}
+
+function displayGameMain() {
+    document.getElementById("game-display").style.display = "flex";
+    document.getElementById("text-display").style.display = "block";
 }

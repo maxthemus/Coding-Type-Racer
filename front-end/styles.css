@@ -1,7 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Kanit&display=swap');
 
 * {
-    font-family: 'Kanit';
+    font-family: 'Kanit', monospace; 
+    /*font-family: monospace; */
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -272,6 +273,20 @@ main #text-display span {
 }
 
 main #input-area, main #user-input {
-    width: 500px;
-    text-align: center;
+    width: 100%;
+}
+
+main #user-input {
+    width: 100%;
+    resize: none;
+    color: green;
+    text-align: left;
+    background-color: rgba(0,0,0,0);
+    font-size: 30px;
+    height: 50px;
+}
+
+/* styles for game over buttons */
+main #game-over #playagain-button {
+    margin-bottom: 5px;
 }

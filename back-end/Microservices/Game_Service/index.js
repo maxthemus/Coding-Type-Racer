@@ -106,6 +106,8 @@ function handleUserJoinGame(socket, userId) {
             type: "USER-JOINED",
             gameState: gameToJoin.stateToObj()
         }));
+
+        console.log(gameToJoin);
     } else {
         //USER is in a game 
         console.log("User is already in a game");
@@ -181,10 +183,7 @@ function handleUserLeave(socket, userId) {
             idToGame.delete(gameId);
 
             //removing games from waiting agmes
-            if(usersGame.state == "WAITING") {
-                let index = waitingGames.indexOf(usersGame);
-                waitingGames.splice(index, 1);
-            }
+            removeWaitingGame(usersGame); 
        } else {
             //We want to send an update of the gameState back to users
             socket.send(JSON.stringify({
@@ -205,6 +204,9 @@ function handleUserLeave(socket, userId) {
 
         //Updating game State on clients
     
+    } else {
+        //We just want to remove the from the game map
+        userToGame.delete(userId);
     }
 }
 
@@ -231,6 +233,9 @@ function handleUserStart(socket, userId) {
 
             //set gameState to "RUNNING"
             usersGame.gameState = "RUNNING";
+
+            //Removing game from waiting games
+            removeWaitingGame(usersGame);
 
             //Send response "GAME-START"
             socket.send(JSON.stringify({
@@ -278,6 +283,22 @@ function handleUserFinish(socket, userId) {
                     type: "GAME-UPDATE",
                     gameState: usersGame.stateToObj()
                 }));
+
+                //Now we want to check to see if all users have finihsed
+                let gameFinished = true; //we assume the game is finished
+                for(let index in usersGame.players) {
+                    const userId = usersGame.players[index]; 
+                    if(usersGame.playerStatus.get(userId) < usersGame.length) {
+                        console.log("User isn't finished!!!!!!!!");
+                        gameFinished = false;
+                        break;
+                    }    
+                }
+
+                //Checking to see if the game is finished if so we need to clean up the game
+                if(gameFinished) {
+                    handleGameCleanUp(usersGame);
+                }
             } 
         }
     } 
@@ -307,5 +328,28 @@ function handleUserUpdate(socket, userId, updateStatus) {
                 gameState: usersGame.stateToObj()
             }));
         }
+    }
+}
+
+function handleGameCleanUp(game) {
+    game.gameState = "EMPTY"; //Setting game state to EMPTY
+    emptyGames.push(game); //Adding usersGame to empty array
+
+    /** TODO -- CLEAN UP EMPTY GAMES */
+    //Removing gameState from map
+    idToGame.delete(game.id);
+
+    //removing games from waiting agmes
+    if(game.state == "WAITING") {
+        let index = waitingGames.indexOf(game);
+        waitingGames.splice(index, 1);
+    } 
+}
+
+function removeWaitingGame(game) {
+    //removing games from waiting agmes
+    if(game.state == "WAITING") {
+        let index = waitingGames.indexOf(game);
+        waitingGames.splice(index, 1);
     }
 }
