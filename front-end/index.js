@@ -9,6 +9,9 @@ let text = ""; //Holds text user is typing in game
 let textArray = []; //Holds the individual characters for the text in Array
 
 
+let count = 0;
+let increment = true;
+
 function setNextSpace() {
     const arrayQuote = quoteDisplayElement.querySelectorAll('span');
 
@@ -69,6 +72,8 @@ quoteInputElement.addEventListener('input', (event) =>{
         } else {
             switch (event.data) {
                 case " ":
+                    pacBlue = 200
+                    moveR + 10
                     console.log("New World");
                     //Clearing the input and shiriting the indexPtr
                     indexPtr = (indexPtr + arrayValue.length);
@@ -98,8 +103,31 @@ function getText() {
 }
 
 
+let pacBlue = 0
+let moveR = 0
+//-----------------------------------pac man-----------------------
+function draw(){
+
+    translate(0,moveR)
+        angleMode(DEGREES);
+      fill(255, 255, pacBlue); // Yellow color for Pac-Man
+      arc(50, 50, 80, 80, count,-count, PIE)
+      
+      if (increment) {
+        count++;
+        if (count >= 20) {
+          increment = false;
+        }
+      } else {
+        count--;
+        if (count <= 0) {
+          increment = true;
+        }
+      }
+    }
+
 function getTextQuote(){
-    return "testing this works";
+    return "Testing this works boing";
     //return fetch (QUOTE_API_URL)
     //.then(response => response.json())
     //.then(data => data.text)
@@ -136,6 +164,10 @@ function getTimerTime(){
    return Math.floor((new Date() - startTime) / 1000)// will always round down
 }
 
+function setup() {
+    createCanvas(400, 400);
+  }
+  
 
 
 //returns an array of all index of special character in order
@@ -151,58 +183,3 @@ function getKeyIndexes(text) {
 }
 
 
-//Functions
-/**
-Funtion getText() will send an API request to the backend to recieve a random snippet of code for the game
-*/
-// function getText() {
-//     //Fetch is used to send API requests
-//     fetch(QUOTE_API_URL).then((payload) => { 
-//         return payload.json(); //Takes what is sent back and packages it into JSON
-//     }).then((data) => { //the parameter is data is the JSON 
-//         text = data.text;
-//         textArray = text.split("");
-
-//         addTextToScreen();
-
-//         inGame = true;
-//     }).catch((err) => {
-//         //ERROR handling
-//         console.log(err);
-//         alert("Something Went Wrong on FETCH REQUEST");
-//     });
-// }
-
-// function addTextToScreen() {
-//     document.getElementById("text__tag").innerHTML = ""; //Reseting the text to nothing
-    
-//     for(let i = 0; i < textArray.length; i++) {
-//         let tempElement = document.createElement("span");
-//         tempElement.innerText = textArray[i];
-//         tempElement.classList.add('incorrect');
-//         tempElement.setAttribute("id", "texts");
-
-//         let textTag = document.getElementById('text__tag');
-//         textTag.appendChild(tempElement);
-//     }
-// }
-
-// const inputFiel.getElementById('quoteInput')
-// inputField.addEventListener('input', () => {
-//     const spanArray = document.querySelectorAll("span");
-//     console.log("even handler");
-
-//     for(let i = 0; i < textArray.length; i++) {
-//         if(inputField.value.charAt(i) === textArray[i]) {
-//             //Correct
-//             spanArray[i].classList.remove("incorrect");
-//             spanArray[i].classList.remove("normal");
-//             spanArray[i].classList.add("correct");
-//         } else {
-//             //Incorrect
-//             spanArray[i].classList.remove("correct");
-//             spanArray[i].classList.remove("normal");
-//             spanArray[i].classList.add("incorrect");
-//         }
-//     }
-// });
