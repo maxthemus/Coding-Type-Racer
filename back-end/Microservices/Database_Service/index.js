@@ -304,6 +304,50 @@ app.get(PATH+"/text/random", (req,res) => {
     });
 });
 
+//End point is for grabbing text with specified language and difficulty
+app.get(PATH+"/text", (req,res) => {
+    const difficult = req.query.difficulty;
+    const language = req.query.language;
+
+    if(!difficult || !language) {
+        res.send({
+            type: "ERROR"
+        });
+        return;
+    }
+
+    let sqlQuery = `SELECT * FROM game_text `;
+    if(language == "RANDOM") {
+        if(difficult == "RANDOM") {
+            sqlQuery += `ORDER BY RAND() `;
+        } else {
+            sqlQuery += `WHERE difficulty='${difficult}' ORDERBY RAND() `;
+        }
+    } else {
+        if(difficult == "RANDOM") {
+            sqlQuery += `WHERE language='${language}' ORDER BY RAND() `;
+        } else {
+            sqlQuery += `WHERE language='${language}' AND difficulty='${difficult}' ORDER BY RAND() `;
+        }
+    }
+    sqlQuery += `LIMIT 1`;
+
+
+    //const sqlQuery = `SELECT * FROM game_text 
+    console.log(sqlQuery);
+    dbCon.query(sqlQuery, (err, result) => {
+        if(err) {
+            res.send({
+                type: "ERROR",
+                message: "Error with DB"
+            });
+        } else {
+            //MIGHT NEED TO REMOVE ESCAPE CHARACTERS FROM TEXT
+            res.send(result[0]);
+        }
+    });
+});
+
 //Starting server
 app.listen(PORT, () => {
     console.log("Database service started on : " + PORT);

@@ -310,21 +310,7 @@ function handleUserCharacterInput(event) {
     const arrayQuote = document.getElementById("text-display").querySelectorAll("span"); //Getting all the span tags
     const arrayValue = document.getElementById("user-input").value.split('');
 
-    let valid = true; 
-    for(let index = indexPtr; index < (indexPtr + arrayValue.length); index++) {
-        if(arrayValue[index - indexPtr] == arrayQuote[index].innerText && valid) {
-            //Setting span tag as correct
-            arrayQuote[index].classList.remove("incorrect");
-            arrayQuote[index].classList.add("correct");
-
-        } else {
-            valid = false; //typing is invalid
-        
-            arrayQuote[index].classList.remove("correct");
-            arrayQuote[index].classList.add("incorrect");
-        }
-    }
-
+    let valid = updateTextColors();
     if(valid) {
         if(indexPtr + arrayValue.length >= arrayQuote.length) {
             state++;
@@ -342,17 +328,16 @@ function handleUserCharacterInput(event) {
                     //Reset input because new word
                     indexPtr = (indexPtr + arrayValue.length);
                     document.getElementById("user-input").value = "";
-                    
-                    state++; //incrementing state
-                    updatePlayerStatus();
                     break;
                 case null:
                     //Checking if input was new line
                     if(event.inputType == "insertLineBreak") {
                         console.log("NEW LINE");
+                        indexPtr = (indexPtr + arrayValue.length);
+                        document.getElementById("user-input").value = "";
                     }
                     break;
-            }
+            } 
         }
     }
 
@@ -429,6 +414,8 @@ function startGame() {
 
 function gameFinished() {
     document.getElementById("user-input").disabled = true; //Disabling the input
+    document.getElementById("user-input").removeEventListener("input", handleUserCharacterInput);
+
     clearInterval(countFunc); //Stoping count function calls
 
     sendGameFinished();    
@@ -664,4 +651,41 @@ function updateGameLength(text) {
     }
 
     gameLength = count+1; //+1 because the final character
+}
+
+
+
+
+//ORIGINAL FUNCTION IN SINGLEPLAYER
+function handleTabs(event) {
+    if(event.key === 'Tab') {
+        event.preventDefault();
+        event.target.value = event.target.value +  "    ";
+
+        updateTextColors();
+    } 
+}
+
+//ORIGINAL FUNCTION IS IN SINGLEPLAYER
+//Funciton for updating color text
+function updateTextColors() {
+    const arrayQuote = document.getElementById("text-display").querySelectorAll("span"); //Getting all the span tags
+    const arrayValue = document.getElementById("user-input").value.split('');
+
+    let valid = true; 
+    for(let index = indexPtr; index < (indexPtr + arrayValue.length); index++) {
+        if(arrayValue[index - indexPtr] == arrayQuote[index].innerText && valid) {
+            //Setting span tag as correct
+            arrayQuote[index].classList.remove("incorrect");
+            arrayQuote[index].classList.add("correct");
+
+        } else {
+            valid = false; //typing is invalid
+        
+            arrayQuote[index].classList.remove("correct");
+            arrayQuote[index].classList.add("incorrect");
+        }
+    } 
+
+    return valid;
 }
