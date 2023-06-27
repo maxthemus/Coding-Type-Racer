@@ -286,6 +286,9 @@ main #user-input {
     background-color: rgba(0,0,0,0);
     font-size: 30px;
     height: 50px;
+
+    overflow-y: hidden; /* Hide vertical scrollbar */
+    overflow-x: hidden; /* Hide horizontal scrollbar */
 }
 
 /* styles for game over buttons */
@@ -329,4 +332,9 @@ main #menu {
 #game-settings .setting-text .setting-title {
     font-size: 15px;
     text-align: center;
+}
+
+/* styles for span tag */
+span {
+    white-space: pre; /* Preserve white spaces */
 }

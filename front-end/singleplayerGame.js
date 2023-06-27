@@ -7,8 +7,8 @@ const LOGIN_PAGE = "./login.html";
 const SIGNUP_PAGE = "./signup.html";
 
 //Game setting variables
-let language;
-let difficult;
+let language = "RANDOM";
+let difficult = "RANDOM";
 
 
 //User state variables
@@ -142,6 +142,7 @@ function showGame() {
 
     //Adding event listener for game
     document.getElementById("user-input").addEventListener("input", handleUserCharacterInput);
+    document.getElementById("user-input").addEventListener("keydown", handleTabs);
 }
 
 function removeGame() {
@@ -152,6 +153,7 @@ function removeGame() {
 
     //Removing event listener for game
     document.getElementById("user-input").removeEventListener("input", handleUserCharacterInput);
+    document.getElementById("user-input").removeEventListener("keydown", handleTabs);
 }
 
 
@@ -164,6 +166,11 @@ async function playGame() {
     displayGameText(text);
 
     console.log(text);
+
+    /*console.log("Priting text");
+    for(let index in text) {
+        console.log(text[index] + " : " + text.charCodeAt(index));
+    }*/
 }
 
 function gameFinished() {
@@ -203,9 +210,11 @@ function fetchText() {
 function displayGameText(text) {
     const displayArea = document.getElementById("text-display");
     text.split('').forEach(character => {
-        const spanTag = document.createElement("span");
-        spanTag.innerText = character;
-        displayArea.appendChild(spanTag);
+        if(character.charCodeAt(0) != 13) {
+            const spanTag = document.createElement("span");
+            spanTag.innerText = character;
+            displayArea.appendChild(spanTag);
+        }
     });
 }
 
@@ -218,21 +227,8 @@ function handleUserCharacterInput(event) {
     const arrayQuote = document.getElementById("text-display").querySelectorAll("span"); //Getting all the span tags
     const arrayValue = document.getElementById("user-input").value.split('');
 
-    let valid = true; 
-    for(let index = indexPtr; index < (indexPtr + arrayValue.length); index++) {
-        if(arrayValue[index - indexPtr] == arrayQuote[index].innerText && valid) {
-            //Setting span tag as correct
-            arrayQuote[index].classList.remove("incorrect");
-            arrayQuote[index].classList.add("correct");
-
-        } else {
-            valid = false; //typing is invalid
-        
-            arrayQuote[index].classList.remove("correct");
-            arrayQuote[index].classList.add("incorrect");
-        }
-    }
-
+    let valid = updateTextColors();
+    console.log(valid);
     if(valid) {
         if(indexPtr + arrayValue.length >= arrayQuote.length) {
             gameFinished();
@@ -250,6 +246,8 @@ function handleUserCharacterInput(event) {
                     //Checking if input was new line
                     if(event.inputType == "insertLineBreak") {
                         console.log("NEW LINE");
+                        indexPtr = (indexPtr + arrayValue.length);
+                        document.getElementById("user-input").value = "";
                     }
                     break;
             }
@@ -263,3 +261,35 @@ function handleUserCharacterInput(event) {
     }
 }
 
+function handleTabs(event) {
+    if(event.key === 'Tab') {
+        event.preventDefault();
+        event.target.value = event.target.value +  "    ";
+
+        updateTextColors();
+    } 
+}
+
+
+
+function updateTextColors() {
+    const arrayQuote = document.getElementById("text-display").querySelectorAll("span"); //Getting all the span tags
+    const arrayValue = document.getElementById("user-input").value.split('');
+
+    let valid = true; 
+    for(let index = indexPtr; index < (indexPtr + arrayValue.length); index++) {
+        if(arrayValue[index - indexPtr] == arrayQuote[index].innerText && valid) {
+            //Setting span tag as correct
+            arrayQuote[index].classList.remove("incorrect");
+            arrayQuote[index].classList.add("correct");
+
+        } else {
+            valid = false; //typing is invalid
+        
+            arrayQuote[index].classList.remove("correct");
+            arrayQuote[index].classList.add("incorrect");
+        }
+    } 
+
+    return valid;
+}

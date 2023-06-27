@@ -316,7 +316,24 @@ app.get(PATH+"/text", (req,res) => {
         return;
     }
 
-    const sqlQuery = `SELECT * FROM game_text WHERE language='${language}' AND difficulty='${difficult}' ORDER BY RAND() LIMIT 1`;
+    let sqlQuery = `SELECT * FROM game_text `;
+    if(language == "RANDOM") {
+        if(difficult == "RANDOM") {
+            sqlQuery += `ORDER BY RAND() `;
+        } else {
+            sqlQuery += `WHERE difficulty='${difficult}' ORDERBY RAND() `;
+        }
+    } else {
+        if(difficult == "RANDOM") {
+            sqlQuery += `WHERE language='${language}' ORDER BY RAND() `;
+        } else {
+            sqlQuery += `WHERE language='${language}' AND difficulty='${difficult}' ORDER BY RAND() `;
+        }
+    }
+    sqlQuery += `LIMIT 1`;
+
+
+    //const sqlQuery = `SELECT * FROM game_text 
     console.log(sqlQuery);
     dbCon.query(sqlQuery, (err, result) => {
         if(err) {
