@@ -520,77 +520,6 @@ function clearGameInfo() {
     }
 }
 
-
-//Setting up header buttons
-function setUpHeaderButtons() {
-    //Making vertical alignment for drop down menu
-    document.getElementById("user-info").style.display = "block";
-
-    //Creating drop down menu for logged in user
-    const dropDownButton = document.createElement("button"); //Creating button
-    dropDownButton.innerText = window.sessionStorage.getItem("username"); //Setting button value to the users name
-    dropDownButton.addEventListener("click", handleDropDown);
-    document.getElementById("user-info").appendChild(dropDownButton);
-
-    //Creating div for the drop down
-    const dropDownDiv = document.createElement("div");
-    dropDownDiv.style.height = "75px";
-    dropDownDiv.style.width = "100px";
-    dropDownDiv.style.backgroundColor = "#1c5b97";
-    dropDownDiv.style.display = "none";
-    dropDownDiv.style.flexDirection = "column";
-    dropDownDiv.id = "user_dropdown";
-    document.getElementById("user-info").append(dropDownDiv);
-
-    //Creating buttons for the drop down
-    const profileButton = document.createElement("button");
-    profileButton.id = "profile-button";
-    profileButton.addEventListener("click", handleMyProfile);
-    profileButton.classList.add("drop_down_button");
-    profileButton.innerText = "My Profile";
-    dropDownDiv.appendChild(profileButton);
-
-
-    const logoutButton = document.createElement("button");
-    logoutButton.id = "logout-button";
-    logoutButton.addEventListener("click", handleLogout);
-    profileButton.classList.add("drop_down_button");
-    logoutButton.innerText = "Logout";
-    dropDownDiv.appendChild(logoutButton);
-}
-
-//Function for redirect main menu
-document.getElementById("logo").addEventListener("click", navigateMainPage);
-function navigateMainPage() {
-    window.location.href = HOME_PAGE;
-}
-
-//Function for header drop down
-function handleDropDown() {
-    //Toggle the drop down menu
-    if(document.getElementById("user_dropdown").style.display == "none") {
-        document.getElementById("user_dropdown").style.display = "flex";
-    } else {
-        document.getElementById("user_dropdown").style.display = "none";
-
-    }
-}
-
-function handleLogout() {
-    console.log("Logging out");
-
-    //Resetting user data
-    window.sessionStorage.clear(); //clearing all session data
-
-    if(window.location.href != "index.html") {
-        window.location.href="./index.html"
-    }
-}
-
-function handleMyProfile() {
-    console.log("My profile");
-}
-
 function displayGameOverButtons() {
     //Creating div for buttons
     const gameOverDiv = document.createElement("div");
@@ -750,6 +679,4 @@ async function updateTextColors() {
         }
         res(valid);
     });
-     
-
 }

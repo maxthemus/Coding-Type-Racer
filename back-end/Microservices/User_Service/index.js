@@ -44,7 +44,7 @@ const uuid = require("uuid");
 const nodemailer = require("nodemailer");
 
 //Setting up bycrypt
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 //Setting up axios for http requests
 const axios = require("axios");
