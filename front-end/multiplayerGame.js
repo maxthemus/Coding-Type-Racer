@@ -14,7 +14,9 @@ let state;
 let gameLength;
 
 //Event listener for 
-window.addEventListener("load", () => {
+window.addEventListener("load", handleLoad);
+
+function handleLoad() {
     //Checking if user is logged in
     if(!getUserInformation()) { 
         window.location.href = LOGIN_PAGE; //Reddirection to login page || Could be main page 
@@ -22,9 +24,7 @@ window.addEventListener("load", () => {
     openSocketConnection(); //Opening socket connection
 
     setUpHeaderButtons(); //Setting up header
-
-    inGame = false; //setting in game to false
-});
+}
 
 
 //Functions
@@ -35,13 +35,31 @@ function openSocketConnection() {
     socket.addEventListener("error", handleConnectionError);
 
     //Handling connection opening
-    socket.addEventListener("open", authenticateSocket);
+    socket.addEventListener("open", handleSocketConnection);
 
     //Handling socket closing
     socket.addEventListener("close", handleSocketClose);
 
     //Handling socket message
     socket.addEventListener("message", handleSocketMessage);
+}
+
+function handleSocketConnection() {
+    authenticateSocket();
+
+    //Getting url parameters
+    const url = new URL(window.location.href);
+    const searchParams = url.searchParams;
+
+    if(searchParams.has("game")) {
+        console.log("HERE");
+        //We want to join the game right away
+        removeGameMenu();
+        displayGameMain(); 
+        joinGame(searchParams.get("game"));
+    } else {
+        inGame = false; //setting in game to false
+    }
 }
 
 //Function for handling connection error
@@ -242,7 +260,17 @@ function joinQueue() {
 
     if(socket.readyState == WebSocket.OPEN) {
         socket.send(JSON.stringify({
-            type: "JOIN" 
+            type: "JOIN",
+        }));
+    } else {
+        console.log("Socket isn't open || Handle this error");
+    }
+}
+function joinGame(gameId) {
+    if(socket.readyState == WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: "JOIN",
+            gameId: gameId
         }));
     } else {
         console.log("Socket isn't open || Handle this error");

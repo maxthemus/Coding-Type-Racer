@@ -46,7 +46,11 @@ socketServer.on("connection", (socket) => {
             switch(message.type) {
                 case "JOIN":
                     console.log("Joining game");
-                    handleUserJoinGame(socket, message.userId);
+                    if("gameId" in message){ 
+                        handleUserJoinGame(socket, message.userId, message.gameId);
+                    } else {
+                        handleUserJoinGame(socket, message.userId, null);
+                    }
                     break;
                 case "LEAVE":
                     console.log("Leaving Game");
@@ -91,32 +95,49 @@ const emptyGames = []; //FOR DEBUGGING should probably remove
  * @param {socket} socket 
  * @param {userId as String} userId 
  */
-async function handleUserJoinGame(socket, userId) {
+async function handleUserJoinGame(socket, userId, gameId) {
     //Check if the user is already in a game
     if(!userToGame.has(userId)) {
         //USER is not in a game 
 
-        //Find game for user to join
-        let gameToJoin = await Promise.resolve(searchForGame());
-        if(!gameToJoin) { //Checking if game was found
-            //Game was not found
-            gameToJoin = await Promise.resolve(createGame());
-        }  
+        //Checking if user wants to join a specific game
+        if(gameId === null) {
+            //Find game for user to join
+            let gameToJoin = await Promise.resolve(searchForGame());
+            if(!gameToJoin) { //Checking if game was found
+                //Game was not found
+                gameToJoin = await Promise.resolve(createGame());
+            }  
+                
+            //JOIN user to game
+            joinGame(userId, gameToJoin);
+
+            //SEND response 
+            socket.send(JSON.stringify({
+                type: "USER-JOINED",
+                gameState: gameToJoin.stateToObj()
+            }));
+
             
-        //JOIN user to game
-        joinGame(userId, gameToJoin);
+            //AUTO GAME STARTER
+            //Updating game State on clients
+            if(gameToJoin.type == "NORMAL") {
+                gameAutoStarter(gameToJoin, socket);
+            }
+        } else {
+            //User wants to join a specific game
+            if(idToGame.has(gameId)) {
+                const gameToJoin = idToGame.get(gameId);
+                if(gameToJoin.type == "PRIVATE") {
+                    //Then we want to add the player to the game
+                    joinGame(userId, gameToJoin);
 
-        //SEND response 
-        socket.send(JSON.stringify({
-            type: "USER-JOINED",
-            gameState: gameToJoin.stateToObj()
-        }));
-
-        
-        //AUTO GAME STARTER
-        //Updating game State on clients
-        if(gameToJoin.type == "NORMAL") {
-            gameAutoStarter(gameToJoin, socket);
+                    socket.send(JSON.stringify({
+                        type: "USER-JOINED",
+                        gameState: gameToJoin.stateToObj()
+                    }));
+                }
+            }
         }
     } else {
         //USER is in a game 

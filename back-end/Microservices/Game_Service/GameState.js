@@ -8,7 +8,7 @@ class GameState {
         this.nextPlace = 1;
         this.text = text;
         this.length = this.getTextLength(text);
-        this.type = "NORMAL"; //TYPES INCLUDE "NORMAL", "PRIVATE"
+        this.type = "PRIVATE"; //TYPES INCLUDE "NORMAL", "PRIVATE"
         this.timer = null; //Set this variable to the setTimeout 
     } 
 
