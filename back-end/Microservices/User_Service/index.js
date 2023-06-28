@@ -48,6 +48,8 @@ const bcrypt = require("bcrypt");
 
 //Setting up axios for http requests
 const axios = require("axios");
+const { resolve } = require('path');
+const { rejects } = require('assert');
 
 
 //#TEMP VARIABLES TO REPLICATE DB
@@ -226,6 +228,31 @@ app.get(PATH+"/info/username", (req, res) => {
     });
 });
 
+//Get user information for profile
+app.get(PATH+"/info/profile", async (req, res) => {
+    const username = req.query.username;    
+
+    const regexPattern = /^[a-zA-Z0-9_]{5,16}$/;
+    if(!regexPattern.test(username)) {
+        res.send({
+            userFound: false
+        });
+    }    
+
+    //If regex passes we want to grab user information
+    try {
+        const profile = await getUserProfileData(username);
+        res.send({
+            userFound: true,
+            userProfile: profile
+        });
+    } catch(err) {
+        res.send({
+            userFound: false
+        });
+    }
+});
+
 
 //Starting the server!
 app.listen(PORT, () => {
@@ -367,7 +394,7 @@ async function signUpUser(user) {
 //Checks if the email is already taken
 function checkEmailTaken(email) {
     //Sending POST request to db to check for email is taken
-    axios.post(DB_SERVICE+"/check/email", {email: email}).then(() => {
+    axios.post(DB_SERVICE+"/check/email", {email: email}).then((res) => {
         if("emailTaken" in res.data) {
             return res.emailTaken;
         }
@@ -414,6 +441,29 @@ function hashPassword(password) {
             } else {
                 res(hash);
             }
+        });
+    });
+}
+
+
+/**
+ * Searches db for user profile information 
+ * @param {*} username 
+ */
+function getUserProfileData(username) {
+    return new Promise((resolve, reject) => {
+        axios.get(DB_SERVICE+"/user/profile?username="+username).then((res) => {
+            const data = res.data;
+
+            if("validUser" in data) {
+                if(data.validUser) {
+                    return resolve(data.userProfile);
+                }  
+            }
+
+            return reject(); 
+        }).catch(() => {
+            reject();
         });
     });
 }

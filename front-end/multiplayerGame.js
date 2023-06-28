@@ -192,6 +192,7 @@ function displayGameView() {
 
     //Adding event listener to the game view input
     document.getElementById("user-input").addEventListener("input", handleUserCharacterInput);
+    document.getElementById("user-input").addEventListener("keydown", handleTabs);
 }
 
 //Function for removing game view
@@ -202,9 +203,18 @@ function removeGameView() {
 
 
 //FUNCITON FOR GAME 
+/**
+ * 
+ *BIG TOBY FUNC
+ */
 function updateGameStateDisplay(gameState) {
     //Updating text 
     const stateMap = new Map(gameState.playerStatus);
+    
+    console.log("UPDATING GAME STATES");
+    
+    //Key == USER ID
+    //Value == User status (integer)
     for(const [key, value] of stateMap) {
         const stateTag = document.getElementById(key +"-state");
         if(stateTag != null) {
@@ -244,12 +254,13 @@ function joinQueue() {
 function displayGameText(text) {
     const displayArea = document.getElementById("text-display");
     text.split('').forEach(character => {
-        const spanTag = document.createElement("span");
-        spanTag.innerText = character;
-        displayArea.appendChild(spanTag);
+        if(character.charCodeAt(0) != 13) {
+            const spanTag = document.createElement("span");
+            spanTag.innerText = character;
+            displayArea.appendChild(spanTag);
+        }
     });
 }
-
 
 //Function displays all the player information in the game table
 async function updatePlayerData(gameState) {
@@ -306,11 +317,11 @@ async function updatePlayerData(gameState) {
 
 //Function to handle user input for game 
 let indexPtr = 0; //Variable for current index of character in typing
-function handleUserCharacterInput(event) {
+async function handleUserCharacterInput(event) {
     const arrayQuote = document.getElementById("text-display").querySelectorAll("span"); //Getting all the span tags
     const arrayValue = document.getElementById("user-input").value.split('');
 
-    let valid = updateTextColors();
+    let valid = await updateTextColors();
     if(valid) {
         if(indexPtr + arrayValue.length >= arrayQuote.length) {
             state++;
@@ -328,6 +339,9 @@ function handleUserCharacterInput(event) {
                     //Reset input because new word
                     indexPtr = (indexPtr + arrayValue.length);
                     document.getElementById("user-input").value = "";
+                    
+                    state++; //Incrementing state
+                    updatePlayerStatus();
                     break;
                 case null:
                     //Checking if input was new line
@@ -335,7 +349,11 @@ function handleUserCharacterInput(event) {
                         console.log("NEW LINE");
                         indexPtr = (indexPtr + arrayValue.length);
                         document.getElementById("user-input").value = "";
+                    
+                        state++; //Incrementing state
+                        updatePlayerStatus();
                     }
+
                     break;
             } 
         }
@@ -668,24 +686,42 @@ function handleTabs(event) {
 
 //ORIGINAL FUNCTION IS IN SINGLEPLAYER
 //Funciton for updating color text
-function updateTextColors() {
-    const arrayQuote = document.getElementById("text-display").querySelectorAll("span"); //Getting all the span tags
-    const arrayValue = document.getElementById("user-input").value.split('');
+async function updateTextColors() {
+    return new Promise((res) => {
+        const arrayQuote = document.getElementById("text-display").querySelectorAll("span"); //Getting all the span tags
+        const arrayValue = document.getElementById("user-input").value.split('');
 
-    let valid = true; 
-    for(let index = indexPtr; index < (indexPtr + arrayValue.length); index++) {
-        if(arrayValue[index - indexPtr] == arrayQuote[index].innerText && valid) {
-            //Setting span tag as correct
-            arrayQuote[index].classList.remove("incorrect");
-            arrayQuote[index].classList.add("correct");
 
-        } else {
-            valid = false; //typing is invalid
-        
-            arrayQuote[index].classList.remove("correct");
-            arrayQuote[index].classList.add("incorrect");
+        //Creating the cursor
+        const cursorIndex = indexPtr + arrayValue.length;
+        if(arrayQuote[cursorIndex + 1] != null) {
+            arrayQuote[cursorIndex + 1].classList.remove("cursor");
         }
-    } 
+        if(arrayQuote[cursorIndex + 1] != null) {
+            arrayQuote[cursorIndex - 1].classList.remove("cursor");
+        }
+        //Placing cursor
+        if(arrayQuote[cursorIndex] != null) {
+            arrayQuote[cursorIndex].classList.add("cursor");
+        }
 
-    return valid;
+
+        let valid = true; 
+        for(let index = indexPtr; index < (indexPtr + arrayValue.length); index++) {
+            if(arrayValue[index - indexPtr] == arrayQuote[index].innerText && valid) {
+                //Setting span tag as correct
+                arrayQuote[index].classList.remove("incorrect");
+                arrayQuote[index].classList.add("correct");
+
+            } else {
+                valid = false; //typing is invalid
+            
+                arrayQuote[index].classList.remove("correct");
+                arrayQuote[index].classList.add("incorrect");
+            }
+        }
+        res(valid);
+    });
+     
+
 }
