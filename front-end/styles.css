@@ -351,3 +351,23 @@ main #menu {
 span {
     white-space: pre; /* Preserve white spaces */
 }
+
+
+
+/* TESTING STYLES */
+#game-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+#game-info, #game-display {
+    height: 100%;
+}
+
+#game-display {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}

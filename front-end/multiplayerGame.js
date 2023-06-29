@@ -10,8 +10,10 @@ let countValue; //For game start countdown interval reference
 let startTime;
 let state;
 
-//Game variables
-let gameLength;
+//Function for getting user login information
+function getUserInformation() {
+    return sessionStorage.getItem("token");
+}
 
 //Event listener for 
 window.addEventListener("load", handleLoad);
@@ -23,10 +25,12 @@ function handleLoad() {
     }
     openSocketConnection(); //Opening socket connection
 
-    setUpHeaderButtons(); //Setting up header
 }
 
 
+/**
+ * SOCKET FUNCTIONS
+ */
 //Functions
 function openSocketConnection() {
     socket = new WebSocket(SOCKET_SERVER); //Opening socket connection
@@ -82,7 +86,7 @@ function handleSocketMessage(event) {
         switch(message.type) {
             case "AUTH":
                 //On auth we want to enable game menu 
-                displayGameMenu();
+                addMultiplayerMenu();
                 return;
             case "USER-JOIN":
                 console.log(message);
@@ -94,58 +98,13 @@ function handleSocketMessage(event) {
                 handleUserFinished(message.gameState);
                 return;
             case "GAME-START":
-                handleGameStart(message.gameState);
+                handleGameStart();
                 return;
             case "GAME-UPDATE":
                 updateGameStateDisplay(message.gameState);
                 return;
         }
     }
-}
-
-//Function handle closing socket
-function handleSocketClose() {
-    window.location.href = HOME_PAGE;
-}
-
-//Function handles user joining a game
-function handleJoinGame(gameState) {
-    if(!inGame) {
-        //Close the menu
-        removeGameMenu();
-    
-        //Open up game view
-        displayGameView();
-
-        if(gameState.state == "WAITING") {
-            displayStartButton();
-        }
-        
-        //Display the text for the game
-        displayGameText(gameState.text);
-        
-        //Updating game length
-        updateGameLength(gameState.text);
-        
-        inGame = true; //Setting in game 
-    }
-        
-    //Adding player to the 
-    updatePlayerData(gameState);
-}
-
-//Function handles game start
-function handleGameStart(gameState) {
-    removeStartButton(); //Removing the start button from the game
-
-    countValue = 10; //10 Seconds
-    countFunc = setInterval(countDown, 1000); 
-}
-
-function handleUserFinished(message) {
-    console.log("User has finished");
-
-    updatePlayerPlacement(message.userId, message.placement);
 }
 
 function updatePlayerStatus() {
@@ -174,10 +133,105 @@ function authenticateSocket() {
     }
 }
 
-//Function for getting user login information
-function getUserInformation() {
-    return sessionStorage.getItem("token");
+function joinQueue() {
+    console.log("Joining game queue");
+
+    if(socket.readyState == WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: "JOIN",
+        }));
+    } else {
+        console.log("Socket isn't open || Handle this error");
+    }
 }
+function joinGame(gameId) {
+    if(socket.readyState == WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: "JOIN",
+            gameId: gameId
+        }));
+    } else {
+        console.log("Socket isn't open || Handle this error");
+    }
+}
+
+//Function handle closing socket
+function handleSocketClose() {
+    window.location.href = HOME_PAGE;
+}
+
+/**
+ *  FUNCTIONS
+ */
+
+//Function handles user joining a game
+function handleJoinGame(gameState) {
+    handleGameGraphicsUpdate(gameState, true); 
+    if(!inGame) {
+        if(gameState.state == "WAITING") {
+            //displayStartButton();
+        }
+        updateTextLength(gameState.text);
+        inGame = true; //Setting in game 
+    }
+}
+
+//Function handles game start
+function handleGameStart() {
+    removeStartButton(); //Removing the start button from the game
+
+    countValue = 10; //10 Seconds
+    countFunc = setInterval(countDown, 1000); 
+}
+//Countdown function
+function countDown() {
+    countValue--;
+    document.getElementById("counter").innerText = countValue;
+
+    if(countValue <= 0) {
+        clearInterval(countFunc);
+        startGame(); //Starting the game
+    }
+}
+
+//Count up function
+function countUp() {
+    countValue++;
+    document.getElementById("counter").innerText = countValue;
+}
+
+
+/**
+ * Handling user finishing game
+ */
+function handleUserFinished(message) {
+    console.log("User has finished");
+
+    updatePlayerPlacement(message.userId, message.placement);
+}
+
+//function update players placement
+function updatePlayerPlacement(userId, placementNum) {
+    console.log(userId);
+    const userRow = document.getElementById(userId + "-placement");
+
+    switch(placementNum) {
+        case 1:
+            userRow.innerText = placementNum + "st";
+            break;
+        case 2:
+            userRow.innerText = placementNum + "nd";
+            break;
+        case 3:
+            userRow.innerText = placementNum + "rd";
+            break;
+        default:
+            userRow.innerText = placementNum + "th";
+            break;
+    }
+}
+
+
 
 
 //Function for displaying game menu
@@ -251,92 +305,6 @@ function updateGameStateDisplay(gameState) {
                 state += Math.round(Math.random()) + "";
             }
             stateTag.innerText = state;
-        }
-    }
-}
-
-function joinQueue() {
-    console.log("Joining game queue");
-
-    if(socket.readyState == WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-            type: "JOIN",
-        }));
-    } else {
-        console.log("Socket isn't open || Handle this error");
-    }
-}
-function joinGame(gameId) {
-    if(socket.readyState == WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-            type: "JOIN",
-            gameId: gameId
-        }));
-    } else {
-        console.log("Socket isn't open || Handle this error");
-    }
-}
-
-
-//Updated the text in span
-function displayGameText(text) {
-    const displayArea = document.getElementById("text-display");
-    text.split('').forEach(character => {
-        if(character.charCodeAt(0) != 13) {
-            const spanTag = document.createElement("span");
-            spanTag.innerText = character;
-            displayArea.appendChild(spanTag);
-        }
-    });
-}
-
-//Function displays all the player information in the game table
-async function updatePlayerData(gameState) {
-    const gameTable = document.getElementById("info-table");
-
-    //Upating user information
-    for(let index in gameState.players) {
-        //Checking if player information is already created
-        if(!document.getElementById(gameState.players[index])) {
-            //If it isn't created then we want to add a new row
-            const userRow = document.createElement("tr"); 
-            userRow.id = gameState.players[index];
-
-            let username = await fetch(USER_SERVICE+"info/username?id="+gameState.players[index]).then((res) => {
-                return res.json();
-            }).then((data) => {
-                console.log(data);
-                if("username" in data) {
-                    return data.username;
-                } else {
-                    return "...";
-                }
-            });
-
-            const userNameCol = document.createElement("td");
-            userNameCol.innerText = username; //Setting name as player ID <-- FOR NOW
-            userNameCol.id = gameState.players[index] + "-name";
-            userNameCol.classList.add("username-info");
-        
-            const userStateCol = document.createElement("td");
-            userStateCol.id = gameState.players[index] + "-state";
-            userStateCol.classList.add("status-info");
-
-            const userPlacementCol = document.createElement("td");
-            userPlacementCol.id = gameState.players[index] + "-placement";
-            userPlacementCol.classList.add("placement-info");
-
-            //Now we want to add append all the information to the row
-            //And then add the row to the game table
-            userRow.appendChild(userNameCol);
-            userRow.appendChild(userStateCol);
-            userRow.appendChild(userPlacementCol);
-
-            //Appending row to table
-            gameTable.appendChild(userRow); 
-        } else {
-            //We can assume that the name is already setup and just update the status 
-            document.getElementById(gameState.players[index] + "-state").in
         }
     }
 }
@@ -429,22 +397,7 @@ function sendStartGame() {
     }
 }
 
-//Countdown function
-function countDown() {
-    countValue--;
-    document.getElementById("counter").innerText = countValue;
 
-    if(countValue <= 0) {
-        clearInterval(countFunc);
-        startGame(); //Starting the game
-    }
-}
-
-//Count up function
-function countUp() {
-    countValue++;
-    document.getElementById("counter").innerText = countValue;
-}
 
 function startGame() {
     state = 0;
@@ -488,26 +441,7 @@ function sendGameFinished() {
     } 
 }
 
-//function update players placement
-function updatePlayerPlacement(userId, placementNum) {
-    console.log(userId);
-    const userRow = document.getElementById(userId + "-placement");
 
-    switch(placementNum) {
-        case 1:
-            userRow.innerText = placementNum + "st";
-            break;
-        case 2:
-            userRow.innerText = placementNum + "nd";
-            break;
-        case 3:
-            userRow.innerText = placementNum + "rd";
-            break;
-        default:
-            userRow.innerText = placementNum + "th";
-            break;
-    }
-}
 
 //Removes information from game display items
 function clearGameInfo() {
@@ -612,22 +546,6 @@ function displayGameMain() {
 }
 
 
-function updateGameLength(text) {
-    let count = 0;
-    for(let index in text) {
-        switch(text[index]) {
-            case " ":
-            case ".":
-            case "(":
-            case "<":
-                count++;
-                break;
-        }
-    }
-
-    gameLength = count+1; //+1 because the final character
-}
-
 
 
 
@@ -680,3 +598,489 @@ async function updateTextColors() {
         res(valid);
     });
 }
+
+
+/**
+ * UPDATING VARIABLES
+ */
+let language = "RANDOM";
+let gameLength;
+
+/**
+ * UPDATING CODE REFACTORING
+ */
+function addMultiplayerMenu() {
+    const mainDiv = document.getElementById("multiplayer-main");
+
+    const menuTitle = document.createElement("h3");
+    menuTitle.id = "multiplayer-title";
+    menuTitle.innerText = "Multiplayer";
+    mainDiv.appendChild(menuTitle);
+
+    //Creating div for buttons
+    const menuDiv = document.createElement("div");
+    menuDiv.id = "multiplayer-menu";
+
+    //Creating buttons
+    //Queue button
+    const menuQueueButton = document.createElement("button");
+    menuQueueButton.id = "multiplayer-menu-queue";
+    menuQueueButton.innerText = "Join Queue";
+    menuQueueButton.addEventListener("click", handleJoinGameQueue);
+    menuDiv.appendChild(menuQueueButton);
+
+    //Create game button
+    const menuCreateButton = document.createElement("button");
+    menuCreateButton.id = "multiplayer-menu-create";
+    menuCreateButton.innerText = "Create Game";
+    menuCreateButton.addEventListener("click", handleCreateGame);
+    menuDiv.appendChild(menuCreateButton);
+
+    mainDiv.appendChild(menuDiv);
+}
+
+function removeMultiplayerMenu() {
+    const mainDiv = document.getElementById("multiplayer-main");
+
+    //Removing event handlers
+    document.getElementById("multiplayer-menu-queue").removeEventListener("click", handleJoinGameQueue);
+    document.getElementById("multiplayer-menu-create").removeEventListener("click", handleCreateGame);
+
+    //Removing buttons
+    const menuDiv = document.getElementById("multiplayer-menu");
+    while(menuDiv.firstChild) {
+        menuDiv.removeChild(menuDiv.firstChild);
+    }
+
+    //Removing all elements in mainDiv
+    while(mainDiv.firstChild) {
+        mainDiv.removeChild(mainDiv.firstChild);
+    }
+}
+
+
+//Menu event handler buttons
+function handleJoinGameQueue() {
+    removeMultiplayerMenu();
+    addQueueMenu();
+}
+
+function handleCreateGame() {
+    removeMultiplayerMenu(); 
+}
+
+
+/**
+ * Functions for queue menu
+ */
+function addQueueMenu() {
+    const mainDiv = document.getElementById("multiplayer-main");
+
+    //Creating title
+    const queueTitle = document.createElement("h3");
+    queueTitle.id = "queue-title";
+    queueTitle.innerText = "Queue Settings";
+    mainDiv.appendChild(queueTitle);
+
+    //Creating main div for search settings
+    const settingsDiv = document.createElement("div");
+    settingsDiv.id ="queue-settings";
+    mainDiv.appendChild(settingsDiv);
+
+    //Creating inputs for settings 
+    const languageSettings = document.createElement("div");
+    languageSettings.id = "language-settings";
+    settingsDiv.appendChild(languageSettings);
+
+    //Adding language selector
+    addLanguageSelector();
+
+    
+    //Creating div for buttons 
+    const buttonDiv = document.createElement("div");
+    buttonDiv.id = "queue-buttons";
+
+    //Creating back button
+    const backButton = document.createElement("button");
+    backButton.id = "queue-back-button";
+    backButton.innerText = "X";
+    backButton.addEventListener("click", handleQueueBackButton);
+    buttonDiv.appendChild(backButton);
+
+    //Join Queue button
+    const queueButton = document.createElement("button");
+    queueButton.id = "join-queue-button";
+    queueButton.innerText = "Join Queue";
+    queueButton.addEventListener("click", joinGameQueue);
+    buttonDiv.appendChild(queueButton);
+
+    mainDiv.appendChild(buttonDiv);
+}
+
+function removeQueueMenu() {
+    const mainDiv = document.getElementById("multiplayer-main");
+
+    //First we need to remove all settings divs    
+    removeLanguageSelector();
+
+    const settingsDiv = document.getElementById("queue-settings");
+    while(settingsDiv.firstChild) {
+        settingsDiv.removeChild(settingsDiv.firstChild);
+    }
+
+    //Now we remove event listeners from buttons
+    document.getElementById("join-queue-button").removeEventListener("click", joinGameQueue);
+    document.getElementById("queue-back-button").removeEventListener("click", handleQueueBackButton);
+
+    const buttonDiv = document.getElementById("queue-back-button");
+    while(buttonDiv.firstChild) {
+        buttonDiv.removeChild(buttonDiv.firstChild);
+    }
+
+    //Remove all elements from mainDiv
+    while(mainDiv.firstChild) {
+        mainDiv.removeChild(mainDiv.firstChild);
+    }
+}
+
+function addLanguageSelector() {
+    //Creating selector tag
+    const languageSelector = document.createElement("select");
+    languageSelector.name = "languages";
+    languageSelector.id = "language-select";
+
+    //Creating all options
+    const randomOption = document.createElement("option");
+    randomOption.value = "RANDOM";
+    randomOption.innerText = "Random";
+
+    const pythonOption = document.createElement("option");
+    pythonOption.value = "PYTHON";
+    pythonOption.innerText = "Python";
+
+    const javascriptOption = document.createElement("option");
+    javascriptOption.value = "JAVASCRIPT";
+    javascriptOption.innerText = "Javascript";
+
+    const javaOption = document.createElement("option");
+    javaOption.value = "JAVA";
+    javaOption.innerText = "Java";
+
+    const cOption = document.createElement("option");
+    cOption.value = "C";
+    cOption.innerText = "C";
+
+    //Appending children
+    languageSelector.appendChild(randomOption);
+    languageSelector.appendChild(pythonOption);
+    languageSelector.appendChild(javascriptOption);
+    languageSelector.appendChild(javaOption);
+    languageSelector.appendChild(cOption);
+
+    //Adding event listeners    
+    languageSelector.addEventListener("change", handleLanguageChange);
+
+    //Adding selector to the div
+    document.getElementById("language-settings").appendChild(languageSelector);
+}
+
+function removeLanguageSelector() {
+    //Removing all child elements in selector
+    const languageSelector = document.getElementById("language-select");
+    while(languageSelector.firstChild) {
+        languageSelector.removeChild(languageSelector.firstChild);
+    }
+
+    //Removing event listener
+    languageSelector.removeEventListener("change", handleLanguageChange);
+
+    languageSelector.remove();
+}
+
+//Functions for handling language 
+function handleLanguageChange(event) {
+    language = event.target.value;
+}
+
+function handleQueueBackButton () {
+    removeQueueMenu();
+    addMultiplayerMenu();
+}
+
+/**
+ * Functions for displaying game view
+ */
+function addGameView() {
+    const gameView = document.createElement("div");
+    gameView.id = "game-view";
+    document.getElementById("multiplayer-main").appendChild(gameView);
+
+    addGameInfo();
+
+    addGameDisplay();
+}
+
+function removeGameView() {
+    const gameView = document.getElementById("game-view");
+
+    removeGameInfo();
+
+    removeGameDisplay();
+
+    gameView.remove();
+}
+
+//Functions for sub components of gameView
+function addGameInfo() {
+    const gameInfo = document.createElement("div");
+    gameInfo.id = "game-info";
+    document.getElementById("game-view").appendChild(gameInfo);
+
+    addGameCounter();
+
+    addGameTable();
+
+}
+function removeGameInfo() {
+    const gameInfo = document.getElementById("game-info");
+
+    removeGameCounter();
+
+    removeGameTable();
+
+    //Removing div
+    gameInfo.remove();
+}
+
+function addGameCounter() {
+    const counterDiv = document.createElement("div");
+    counterDiv.id = "game-counter";
+
+    //Creating text tag for timer
+    const counterText = document.createElement("p");
+    counterText.id = "counter";
+    counterText.innerText = "..."; //Default text
+    counterDiv.appendChild(counterText);
+
+    //Appending div to the gameInfo
+    document.getElementById("game-info").appendChild(counterDiv);
+}
+
+function removeGameCounter () {
+    const counterDiv = document.getElementById("game-counter");
+
+    while(counterDiv.firstChild) {
+        counterDiv.removeChild(counterDiv.firstChild);
+    }
+
+    counterDiv.remove();
+}
+
+function addGameTable() {
+    const tableDiv = document.createElement("div");
+    tableDiv.id = "player-info";
+
+    //Creating table
+    const table = document.createElement("table");
+    table.id = "info-table";
+    tableDiv.appendChild(table);
+
+    //Appending table div to game-info
+    document.getElementById("game-info").appendChild(tableDiv);
+} 
+
+function removeGameTable() {
+    const tableDiv = document.getElementById("player-info");
+
+    const table = document.getElementById("info-table");
+    while(table.firstChild) {
+        //Removing col from table
+        while(table.firstChild.firstChild) {
+            table.firstChild.removeChild(table.firstChild.firstChild);
+        }
+        table.removeChild(table.firstChild);
+    }
+
+    //Removing nodes
+    table.remove();
+    tableDiv.remove();
+}
+
+//Adds user to table
+function addUser(userId, username) {
+    const table = document.getElementById("info-table");
+
+    const userRow = document.createElement("tr");
+    userRow.id = userId;
+
+    //Creating the cols for the user information
+    const nameCol = document.createElement("td");
+    nameCol.id = userId + "-name";
+    nameCol.innerText = username;
+
+    const stateCol = document.createElement("td");
+    stateCol.id = userId + "-state";
+
+    const placementCol = document.createElement("td");
+    placementCol.id = userId + "-placement";
+
+    //Appending cols to row
+    userRow.appendChild(nameCol);
+    userRow.appendChild(stateCol);
+    userRow.appendChild(placementCol);
+
+    table.appendChild(userRow);
+}
+
+//Removes user from table
+function removeUser(userId) {
+    //Removing all child nodes
+    const userRow = document.getElementById(userId);
+
+    while(userRow.firstChild) {
+        userRow.removeChild(userRow.firstChild);
+    }
+    userRow.remove();
+}
+
+function addGameDisplay() {
+    const gameDisplay = document.createElement("div");
+    gameDisplay.id = "game-display";
+    document.getElementById("game-view").appendChild(gameDisplay);
+
+    addGameText();
+
+    addGameInput();
+}
+function removeGameDisplay() {
+
+}
+
+function addGameText() {
+    const textDiv = document.createElement("div");
+    textDiv.id = "text-display";
+    document.getElementById("game-display").appendChild(textDiv);
+}
+function removeGameText() {
+
+}
+
+function addGameInput() {
+    const inputDiv = document.createElement("div");
+    inputDiv.id = "input-area";
+    document.getElementById("game-display").appendChild(inputDiv);
+
+    //Creating text field
+    const textArea = document.createElement("textarea");
+    textArea.id = "user-input";
+    textArea.classList.add("text_area");
+    textArea.disabled = true; //by default textarea is disabled
+    textArea.addEventListener("keydown", handleTabs); //Checking for tab
+    textArea.addEventListener("input", handleUserCharacterInput); //Normal input event handler    
+
+    //Appending div to game-display
+    inputDiv.appendChild(textArea);
+}
+function removeGameInput() {
+    const inputDiv = document.getElementById("input-area");
+
+    const textArea = document.getElementById("text_area");
+    //Removing event listeners
+    textArea.removeEventListener("keydown", handleTabs);
+    textArea.removeEventListener("input", handleUserCharacterInput);
+
+    //Removing nodes
+    textArea.remove();
+    inputDiv.remove();
+}
+
+
+/**
+ * GAME FUNCTIONS 
+ */
+function joinGameQueue() {
+    //Remove queue menu
+    removeQueueMenu();
+
+    //Displaying game view
+    addGameView();
+
+    //Send join game request
+    joinQueue();
+}
+
+function handleGameGraphicsUpdate(gameState, updateText) {
+    if(updateText) {
+        updateTextDisplay(gameState.text);
+    }
+
+    updateUserInformation(gameState.players, new Map(gameState.playerStatus));
+}
+
+function updateTextDisplay(text) {
+    const displayArea = document.getElementById("text-display");
+    text.split('').forEach(character => {
+        if(character.charCodeAt(0) != 13) {
+            const spanTag = document.createElement("span");
+            spanTag.innerText = character;
+            displayArea.appendChild(spanTag);
+        }
+    });
+}
+
+function updateUserStatus(statusMap) {
+    for(const [key, value] of statusMap) {
+        const status = document.getElementById(key+"-status");
+        if(status !== null) {
+            status.innerText = value; 
+        }
+    }
+}
+
+async function updateUserInformation(users, statusMap) {
+    //Updating for new usernames
+    for(let index in users) {
+        const userRow = document.getElementById(users[index]);
+        if(!userRow) {
+            //Create user row
+            const username = await fetchUsername(users[index]); 
+            addUser(users[index], username);
+        } 
+        //Update user row information 
+        updateUserStatus(users[index], statusMap.get(users[index]));
+    }
+
+}
+
+
+function updateTextLength(text) {
+    let count = 0;
+    for(let index in text) {
+        switch(text[index]) {
+            case " ":
+            case ".":
+            case "(":
+            case "<":
+                count++;
+                break;
+        }
+    }
+    gameLength = count+1; //+1 because the final character
+}
+
+
+//API FUNCTIONS
+async function fetchUsername(userId) {
+    return new Promise((resolve) => {
+        fetch(USER_SERVICE + "info/username?id=" + userId).then((res) => {
+            return res.json();
+        }).then((data) => {
+            console.log(data);
+            if ("username" in data) {
+                return resolve(data.username);
+            } else {
+                return resolve("...");
+            }
+        });
+    });
+   }
