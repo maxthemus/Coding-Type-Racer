@@ -86,7 +86,11 @@ socketServer.on("connection", (socket) => {
                 switch (message.type) {
                     case "JOIN":
                         //Calling game join handler
-                        handleUserJoinGame(socket, CLIENT_SOCKETS.get(socket));
+                        if("gameId" in message) {
+                            handleUserJoinGame(socket, CLIENT_SOCKETS.get(socket), message.gameId);
+                            return;
+                        } 
+                        handleUserJoinGame(socket, CLIENT_SOCKETS.get(socket), null);
                         return;
                     case "LEAVE":
                         handleUserLeaveGame(socket, CLIENT_SOCKETS.get(socket));
@@ -194,17 +198,25 @@ function removeSocketFromMap(socket) {
  * @param { Socket } socket 
  * @param { userId as String } userId 
  */
-function handleUserJoinGame(socket, userId) {
+function handleUserJoinGame(socket, userId, gameId) {
     console.log("Join join game");
 
     //Checking to see if connection to game service is open
     if(gameServiceSocket.readyState == WebSocket.OPEN) {
-        const message = JSON.stringify({
-            type: "JOIN",
-            userId: userId 
-        });
-    
-        gameServiceSocket.send(message);
+        if(gameId == null) {
+            const message = JSON.stringify({
+                type: "JOIN",
+                userId: userId,
+            });
+            gameServiceSocket.send(message);
+        } else {
+            const message = JSON.stringify({
+                type: "JOIN",
+                userId: userId,
+                gameId: gameId
+            }); 
+            gameServiceSocket.send(message);
+        }
     } else {
         const message = JSON.stringify({
             type: "ERROR",

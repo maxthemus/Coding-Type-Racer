@@ -60,14 +60,3 @@ function handleFailLogin() {
     //Display invalid text
     document.getElementById("form-element").innerText = "Invalid Username or Password";
 }
-
-
-document.getElementById("logo").addEventListener("click", navigateMainPage);
-
-function navigateMainPage() {
-    window.location.href = HOME_PAGE;
-}
-
-document.getElementById("button-signup").addEventListener("click", () => {
-    window.location.href = SIGNUP_PAGE;
-});

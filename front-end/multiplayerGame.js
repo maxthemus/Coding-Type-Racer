@@ -14,7 +14,9 @@ let state;
 let gameLength;
 
 //Event listener for 
-window.addEventListener("load", () => {
+window.addEventListener("load", handleLoad);
+
+function handleLoad() {
     //Checking if user is logged in
     if(!getUserInformation()) { 
         window.location.href = LOGIN_PAGE; //Reddirection to login page || Could be main page 
@@ -22,9 +24,7 @@ window.addEventListener("load", () => {
     openSocketConnection(); //Opening socket connection
 
     setUpHeaderButtons(); //Setting up header
-
-    inGame = false; //setting in game to false
-});
+}
 
 
 //Functions
@@ -35,13 +35,31 @@ function openSocketConnection() {
     socket.addEventListener("error", handleConnectionError);
 
     //Handling connection opening
-    socket.addEventListener("open", authenticateSocket);
+    socket.addEventListener("open", handleSocketConnection);
 
     //Handling socket closing
     socket.addEventListener("close", handleSocketClose);
 
     //Handling socket message
     socket.addEventListener("message", handleSocketMessage);
+}
+
+function handleSocketConnection() {
+    authenticateSocket();
+
+    //Getting url parameters
+    const url = new URL(window.location.href);
+    const searchParams = url.searchParams;
+
+    if(searchParams.has("game")) {
+        console.log("HERE");
+        //We want to join the game right away
+        removeGameMenu();
+        displayGameMain(); 
+        joinGame(searchParams.get("game"));
+    } else {
+        inGame = false; //setting in game to false
+    }
 }
 
 //Function for handling connection error
@@ -192,6 +210,7 @@ function displayGameView() {
 
     //Adding event listener to the game view input
     document.getElementById("user-input").addEventListener("input", handleUserCharacterInput);
+    document.getElementById("user-input").addEventListener("keydown", handleTabs);
 }
 
 //Function for removing game view
@@ -202,9 +221,18 @@ function removeGameView() {
 
 
 //FUNCITON FOR GAME 
+/**
+ * 
+ *BIG TOBY FUNC
+ */
 function updateGameStateDisplay(gameState) {
     //Updating text 
     const stateMap = new Map(gameState.playerStatus);
+    
+    console.log("UPDATING GAME STATES");
+    
+    //Key == USER ID
+    //Value == User status (integer)
     for(const [key, value] of stateMap) {
         const stateTag = document.getElementById(key +"-state");
         if(stateTag != null) {
@@ -232,7 +260,17 @@ function joinQueue() {
 
     if(socket.readyState == WebSocket.OPEN) {
         socket.send(JSON.stringify({
-            type: "JOIN" 
+            type: "JOIN",
+        }));
+    } else {
+        console.log("Socket isn't open || Handle this error");
+    }
+}
+function joinGame(gameId) {
+    if(socket.readyState == WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: "JOIN",
+            gameId: gameId
         }));
     } else {
         console.log("Socket isn't open || Handle this error");
@@ -244,12 +282,13 @@ function joinQueue() {
 function displayGameText(text) {
     const displayArea = document.getElementById("text-display");
     text.split('').forEach(character => {
-        const spanTag = document.createElement("span");
-        spanTag.innerText = character;
-        displayArea.appendChild(spanTag);
+        if(character.charCodeAt(0) != 13) {
+            const spanTag = document.createElement("span");
+            spanTag.innerText = character;
+            displayArea.appendChild(spanTag);
+        }
     });
 }
-
 
 //Function displays all the player information in the game table
 async function updatePlayerData(gameState) {
@@ -306,11 +345,11 @@ async function updatePlayerData(gameState) {
 
 //Function to handle user input for game 
 let indexPtr = 0; //Variable for current index of character in typing
-function handleUserCharacterInput(event) {
+async function handleUserCharacterInput(event) {
     const arrayQuote = document.getElementById("text-display").querySelectorAll("span"); //Getting all the span tags
     const arrayValue = document.getElementById("user-input").value.split('');
 
-    let valid = updateTextColors();
+    let valid = await updateTextColors();
     if(valid) {
         if(indexPtr + arrayValue.length >= arrayQuote.length) {
             state++;
@@ -328,6 +367,9 @@ function handleUserCharacterInput(event) {
                     //Reset input because new word
                     indexPtr = (indexPtr + arrayValue.length);
                     document.getElementById("user-input").value = "";
+                    
+                    state++; //Incrementing state
+                    updatePlayerStatus();
                     break;
                 case null:
                     //Checking if input was new line
@@ -335,7 +377,11 @@ function handleUserCharacterInput(event) {
                         console.log("NEW LINE");
                         indexPtr = (indexPtr + arrayValue.length);
                         document.getElementById("user-input").value = "";
+                    
+                        state++; //Incrementing state
+                        updatePlayerStatus();
                     }
+
                     break;
             } 
         }
@@ -474,77 +520,6 @@ function clearGameInfo() {
     }
 }
 
-
-//Setting up header buttons
-function setUpHeaderButtons() {
-    //Making vertical alignment for drop down menu
-    document.getElementById("user-info").style.display = "block";
-
-    //Creating drop down menu for logged in user
-    const dropDownButton = document.createElement("button"); //Creating button
-    dropDownButton.innerText = window.sessionStorage.getItem("username"); //Setting button value to the users name
-    dropDownButton.addEventListener("click", handleDropDown);
-    document.getElementById("user-info").appendChild(dropDownButton);
-
-    //Creating div for the drop down
-    const dropDownDiv = document.createElement("div");
-    dropDownDiv.style.height = "75px";
-    dropDownDiv.style.width = "100px";
-    dropDownDiv.style.backgroundColor = "#1c5b97";
-    dropDownDiv.style.display = "none";
-    dropDownDiv.style.flexDirection = "column";
-    dropDownDiv.id = "user_dropdown";
-    document.getElementById("user-info").append(dropDownDiv);
-
-    //Creating buttons for the drop down
-    const profileButton = document.createElement("button");
-    profileButton.id = "profile-button";
-    profileButton.addEventListener("click", handleMyProfile);
-    profileButton.classList.add("drop_down_button");
-    profileButton.innerText = "My Profile";
-    dropDownDiv.appendChild(profileButton);
-
-
-    const logoutButton = document.createElement("button");
-    logoutButton.id = "logout-button";
-    logoutButton.addEventListener("click", handleLogout);
-    profileButton.classList.add("drop_down_button");
-    logoutButton.innerText = "Logout";
-    dropDownDiv.appendChild(logoutButton);
-}
-
-//Function for redirect main menu
-document.getElementById("logo").addEventListener("click", navigateMainPage);
-function navigateMainPage() {
-    window.location.href = HOME_PAGE;
-}
-
-//Function for header drop down
-function handleDropDown() {
-    //Toggle the drop down menu
-    if(document.getElementById("user_dropdown").style.display == "none") {
-        document.getElementById("user_dropdown").style.display = "flex";
-    } else {
-        document.getElementById("user_dropdown").style.display = "none";
-
-    }
-}
-
-function handleLogout() {
-    console.log("Logging out");
-
-    //Resetting user data
-    window.sessionStorage.clear(); //clearing all session data
-
-    if(window.location.href != "index.html") {
-        window.location.href="./index.html"
-    }
-}
-
-function handleMyProfile() {
-    console.log("My profile");
-}
-
 function displayGameOverButtons() {
     //Creating div for buttons
     const gameOverDiv = document.createElement("div");
@@ -668,24 +643,40 @@ function handleTabs(event) {
 
 //ORIGINAL FUNCTION IS IN SINGLEPLAYER
 //Funciton for updating color text
-function updateTextColors() {
-    const arrayQuote = document.getElementById("text-display").querySelectorAll("span"); //Getting all the span tags
-    const arrayValue = document.getElementById("user-input").value.split('');
+async function updateTextColors() {
+    return new Promise((res) => {
+        const arrayQuote = document.getElementById("text-display").querySelectorAll("span"); //Getting all the span tags
+        const arrayValue = document.getElementById("user-input").value.split('');
 
-    let valid = true; 
-    for(let index = indexPtr; index < (indexPtr + arrayValue.length); index++) {
-        if(arrayValue[index - indexPtr] == arrayQuote[index].innerText && valid) {
-            //Setting span tag as correct
-            arrayQuote[index].classList.remove("incorrect");
-            arrayQuote[index].classList.add("correct");
 
-        } else {
-            valid = false; //typing is invalid
-        
-            arrayQuote[index].classList.remove("correct");
-            arrayQuote[index].classList.add("incorrect");
+        //Creating the cursor
+        const cursorIndex = indexPtr + arrayValue.length;
+        if(arrayQuote[cursorIndex + 1] != null) {
+            arrayQuote[cursorIndex + 1].classList.remove("cursor");
         }
-    } 
+        if(arrayQuote[cursorIndex + 1] != null) {
+            arrayQuote[cursorIndex - 1].classList.remove("cursor");
+        }
+        //Placing cursor
+        if(arrayQuote[cursorIndex] != null) {
+            arrayQuote[cursorIndex].classList.add("cursor");
+        }
 
-    return valid;
+
+        let valid = true; 
+        for(let index = indexPtr; index < (indexPtr + arrayValue.length); index++) {
+            if(arrayValue[index - indexPtr] == arrayQuote[index].innerText && valid) {
+                //Setting span tag as correct
+                arrayQuote[index].classList.remove("incorrect");
+                arrayQuote[index].classList.add("correct");
+
+            } else {
+                valid = false; //typing is invalid
+            
+                arrayQuote[index].classList.remove("correct");
+                arrayQuote[index].classList.add("incorrect");
+            }
+        }
+        res(valid);
+    });
 }

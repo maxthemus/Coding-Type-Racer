@@ -8,7 +8,7 @@ const USER_SERVICE = "http://127.0.0.1:3051/api/user/signup";
 //Checking if user is already logged in
 window.addEventListener("load", () => {
     if(window.sessionStorage.getItem("username") !== null) {
-        window.location.href = "HOME_PAGE";
+        window.location.href = HOME_PAGE;
     }
 });
 
@@ -128,17 +128,4 @@ function validatePassword(password, repassword) {
         }
     } 
     return false; //Invalid password
-}
-
-
-//Setting up header buttons
-document.getElementById("button-login").addEventListener("click", () => {
-    window.location.href = LOGIN_PAGE;
-});
-
-//Setting up logo home page button
-document.getElementById("logo").addEventListener("click", navigateMainPage);
-
-function navigateMainPage() {
-    window.location.href = HOME_PAGE;
 }

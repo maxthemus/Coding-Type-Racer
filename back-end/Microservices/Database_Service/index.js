@@ -286,6 +286,34 @@ app.get(PATH+"/user/validate", (req, res) => {
     }); 
 });
 
+app.get(PATH+"/user/profile", (req, res) => {
+    const username = req.query.username; 
+    
+    const profileData = new Promise((resolve, reject) => {
+        const sqlQuery = `SELECT username FROM users WHERE username='${username}'`;
+        dbCon.query(sqlQuery, (err, results) => {
+            if(err) {
+                return reject();
+            } 
+            
+            if(results.length >= 1) {
+                return resolve(results[0]);
+            }
+            return reject();
+        });
+    }).then((data) => {
+        res.send({
+            validUser: true,
+            userProfile: data
+        });
+    }).catch((err) => {
+        res.send({
+            validUser: false
+        });
+    });
+});
+
+
 //End point is for grabbing a random text from a random language
 app.get(PATH+"/text/random", (req,res) => {
     const sqlQuery = `SELECT * FROM game_text ORDER BY RAND() LIMIT 1`;
