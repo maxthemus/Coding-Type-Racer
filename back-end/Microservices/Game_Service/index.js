@@ -122,6 +122,7 @@ async function handleUserJoinGame(socket, userId, gameId) {
             //AUTO GAME STARTER
             //Updating game State on clients
             if(gameToJoin.type == "NORMAL") {
+                console.log("Auto Starting Game : " + gameToJoin.id);
                 gameAutoStarter(gameToJoin, socket);
             }
         } else {

@@ -80,7 +80,6 @@ font-weight: bold;
 .incorrect {
     color: black;
     background-color: red;
-    text-decoration: underline;
 }
 
 .cursor {
@@ -362,8 +361,12 @@ span {
     width: 100%;
 }
 
-#game-info, #game-display {
+#game-info, #game-display, #game-over-menu  {
     height: 100%;
+}
+
+#game-over-menu button {
+    height: 100px;
 }
 
 #game-display {

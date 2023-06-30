@@ -101,7 +101,7 @@ function handleSocketMessage(event) {
                 handleGameStart();
                 return;
             case "GAME-UPDATE":
-                updateGameStateDisplay(message.gameState);
+                handleGameGraphicsUpdate(message.gameState, false);
                 return;
         }
     }
@@ -166,20 +166,22 @@ function handleSocketClose() {
 
 //Function handles user joining a game
 function handleJoinGame(gameState) {
-    handleGameGraphicsUpdate(gameState, true); 
     if(!inGame) {
         if(gameState.state == "WAITING") {
             //displayStartButton();
         }
         updateTextLength(gameState.text);
+        
+        handleGameGraphicsUpdate(gameState, true); 
+
         inGame = true; //Setting in game 
+    } else {
+        handleGameGraphicsUpdate(gameState, false);
     }
 }
 
 //Function handles game start
 function handleGameStart() {
-    removeStartButton(); //Removing the start button from the game
-
     countValue = 10; //10 Seconds
     countFunc = setInterval(countDown, 1000); 
 }
@@ -205,8 +207,6 @@ function countUp() {
  * Handling user finishing game
  */
 function handleUserFinished(message) {
-    console.log("User has finished");
-
     updatePlayerPlacement(message.userId, message.placement);
 }
 
@@ -230,86 +230,6 @@ function updatePlayerPlacement(userId, placementNum) {
             break;
     }
 }
-
-
-
-
-//Function for displaying game menu
-function displayGameMenu() {
-    console.log("Displaying game");
-    document.getElementById("queue-menu").style.display = "flex";
-    document.getElementById("game-main").style.display = "none";
-
-    //Adding event listeners to buttons
-    document.getElementById("queue-button").addEventListener("click", joinQueue);
-
-    document.getElementById("game-display").style.display = "flex";
-}
-
-//Function for removing game menu
-function removeGameMenu() {
-    //Removing event listeneres .. Clean up
-    document.getElementById("queue-button").removeEventListener("click", joinQueue);
-
-
-    document.getElementById("queue-menu").style.display = "none";
-    document.getElementById("game-main").style.display = "flex";
-}
-
-//Function for displaying game view
-function displayGameView() {
-    //removeGameMenu(); //Removing game menu
-
-    document.getElementById("game-main").style.display = "flex"; //Displaying the game state
-
-    //Adding event listener to the game view input
-    document.getElementById("user-input").addEventListener("input", handleUserCharacterInput);
-    document.getElementById("user-input").addEventListener("keydown", handleTabs);
-}
-
-//Function for removing game view
-function removeGameView() {
-
-
-}
-
-
-//FUNCITON FOR GAME 
-/**
- * 
- *BIG TOBY FUNC
- */
-function updateGameStateDisplay(gameState) {
-    //Updating text 
-    const stateMap = new Map(gameState.playerStatus);
-    
-    console.log("UPDATING GAME STATES");
-    
-    //Key == USER ID
-    //Value == User status (integer)
-    for(const [key, value] of stateMap) {
-        const stateTag = document.getElementById(key +"-state");
-        if(stateTag != null) {
-            let state = "";
-            console.log(value + " / " + gameLength);
-            let percentage = (value/gameLength);
-            console.log(gameLength);
-            console.log("PERcent + " + percentage);
-
-            //State character length must be 33 characters 
-            let characterCount = ((percentage) * 32);
-            console.log("Character count = " + characterCount);
-
-            for(let i = 0; i < characterCount; i++) {
-                //get a random number 1 or 0                
-                state += Math.round(Math.random()) + "";
-            }
-            stateTag.innerText = state;
-        }
-    }
-}
-
-
 
 //Function to handle user input for game 
 let indexPtr = 0; //Variable for current index of character in typing
@@ -349,7 +269,6 @@ async function handleUserCharacterInput(event) {
                         state++; //Incrementing state
                         updatePlayerStatus();
                     }
-
                     break;
             } 
         }
@@ -359,26 +278,6 @@ async function handleUserCharacterInput(event) {
     if(event.inputType == "deleteContentBackward") {
         arrayQuote[indexPtr + arrayValue.length].classList.remove("correct");
         arrayQuote[indexPtr + arrayValue.length].classList.add("incorrect");
-    }
-}
-
-
-//Removing the start button
-function displayStartButton() {
-    const startButton = document.createElement("button");
-    startButton.innerText = "Start Game";
-    startButton.id = "start-button";
-    startButton.addEventListener("click", sendStartGame);
-
-
-    document.getElementById("game-main").appendChild(startButton);
-}
-
-function removeStartButton() {
-    const button = document.getElementById("start-button");
-    if(button != null) {
-        button.removeEventListener("click", sendStartGame);
-        button.remove();
     }
 }
 
@@ -399,6 +298,7 @@ function sendStartGame() {
 
 
 
+//Function to start Game
 function startGame() {
     state = 0;
     indexPtr = 0; //For input handling
@@ -419,11 +319,9 @@ function gameFinished() {
 
     sendGameFinished();    
 
-    document.getElementById("game-display").style.display = "none"; //Removing game info from display
-    clearGameInfo(); //Removing game information from fields
+    removeGameDisplay(); //Removing textArea and Game Text
 
-    //Displaying game over buttons
-    displayGameOverButtons();
+    addGameOverMenu(); 
 
     inGame = false; //Setting in game to false 
 }
@@ -441,85 +339,6 @@ function sendGameFinished() {
     } 
 }
 
-
-
-//Removes information from game display items
-function clearGameInfo() {
-    const inputField = document.getElementById("user-input");
-    inputField.value = "";
-
-    const textDisplay = document.getElementById("text-display");
-    while(textDisplay.firstChild) {
-        textDisplay.removeChild(textDisplay.firstChild);
-    }
-}
-
-function displayGameOverButtons() {
-    //Creating div for buttons
-    const gameOverDiv = document.createElement("div");
-    gameOverDiv.id = "game-over";
-
-    //Creating play again button
-    const playAgain = document.createElement("button");
-    playAgain.id = "playagain-button";
-    playAgain.innerText = "Play Again";
-
-    //Creating Main Menu button
-    const menuButton = document.createElement("button");
-    menuButton.id = "menu-button";
-    menuButton.innerText = "Main Menu";
-
-    //Adding event handlers to buttons
-    menuButton.addEventListener("click", navigateMainPage);
-    playAgain.addEventListener("click", handlePlayAgain);
-
-
-    //Appending buttons to div
-    gameOverDiv.appendChild(playAgain);
-    gameOverDiv.appendChild(menuButton);
-
-    //Appending game over div to main game
-    document.getElementById("game-main").appendChild(gameOverDiv);
-}
-
-function removeGameOverButtons() {
-    //Removing event listeners
-    const gameOverDiv = document.getElementById("game-over");
-    
-    if(gameOverDiv != null) {
-        //Removing event listeners
-        document.getElementById("playagain-button").removeEventListener("click", navigateMainPage);        
-        document.getElementById("menu-button").removeEventListener("click", handlePlayAgain);
-
-        //Removing children from node
-        while(gameOverDiv.firstChild) {
-            gameOverDiv.removeChild(gameOverDiv.firstChild);
-        }
-
-        //Removing node
-        gameOverDiv.remove();
-    } else {
-        console.log("ERROR - Removing game over buttons");
-    }
-}
-
-function handlePlayAgain() {
-    //removing game over buttons
-    removeGameOverButtons();    
-
-    //Clearing game data
-    clearGameData();
-
-    //Displyaing input field
-    displayGameMain();
-
-    //First we want to leave the game
-    leaveGame();
-
-    //Then we want to join the queue again
-    joinQueue();
-}
-
 function leaveGame() {
     if(socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({
@@ -532,22 +351,10 @@ function leaveGame() {
 
 function clearGameData() {
     document.getElementById("counter").innerText = "...";
-
-    //Removing all information in info table
-    const infoTable = document.getElementById("info-table");
-    while(infoTable.firstChild) {
-        infoTable.removeChild(infoTable.firstChild);
-    }
+    
+    //Clearing player table
+    removeGameTable();
 }
-
-function displayGameMain() {
-    document.getElementById("game-display").style.display = "flex";
-    document.getElementById("text-display").style.display = "block";
-}
-
-
-
-
 
 //ORIGINAL FUNCTION IN SINGLEPLAYER
 function handleTabs(event) {
@@ -622,7 +429,14 @@ function addMultiplayerMenu() {
     menuDiv.id = "multiplayer-menu";
 
     //Creating buttons
-    //Queue button
+    //Quick queue button    
+    const quickQueueButton = document.createElement("button");
+    quickQueueButton.id = "multiplayer-quick-queue";
+    quickQueueButton.innerText = "Quick Queue";
+    quickQueueButton.addEventListener("click", handleQuickJoinGame);
+    menuDiv.appendChild(quickQueueButton);
+
+    //language queue button
     const menuQueueButton = document.createElement("button");
     menuQueueButton.id = "multiplayer-menu-queue";
     menuQueueButton.innerText = "Join Queue";
@@ -643,6 +457,7 @@ function removeMultiplayerMenu() {
     const mainDiv = document.getElementById("multiplayer-main");
 
     //Removing event handlers
+    document.getElementById("multiplayer-quick-queue").removeEventListener("click", handleQuickJoinGame);
     document.getElementById("multiplayer-menu-queue").removeEventListener("click", handleJoinGameQueue);
     document.getElementById("multiplayer-menu-create").removeEventListener("click", handleCreateGame);
 
@@ -953,7 +768,15 @@ function addGameDisplay() {
     addGameInput();
 }
 function removeGameDisplay() {
+    const gameDisplay = document.getElementById("game-display");
 
+    if(gameDisplay !== null) {
+        removeGameText();
+
+        removeGameInput();
+
+        gameDisplay.remove();
+    }
 }
 
 function addGameText() {
@@ -962,7 +785,16 @@ function addGameText() {
     document.getElementById("game-display").appendChild(textDiv);
 }
 function removeGameText() {
+    const textDiv = document.getElementById("text-display");
 
+    if(textDiv !== null) {
+      //Removing all span nodes from div
+      while (textDiv.firstChild) {
+        textDiv.removeChild(textDiv.firstChild);
+      }
+
+      textDiv.remove();
+    }
 }
 
 function addGameInput() {
@@ -984,20 +816,85 @@ function addGameInput() {
 function removeGameInput() {
     const inputDiv = document.getElementById("input-area");
 
-    const textArea = document.getElementById("text_area");
-    //Removing event listeners
-    textArea.removeEventListener("keydown", handleTabs);
-    textArea.removeEventListener("input", handleUserCharacterInput);
+    if(inputDiv !== null) {
+        const textArea = document.getElementById("user-input");
+        //Removing event listeners
+        textArea.removeEventListener("keydown", handleTabs);
+        textArea.removeEventListener("input", handleUserCharacterInput);
 
-    //Removing nodes
-    textArea.remove();
-    inputDiv.remove();
+        //Removing nodes
+        textArea.remove();
+        inputDiv.remove();
+    }
+}
+
+function addGameOverMenu() {
+    const gameOverDiv = document.createElement("div");
+    gameOverDiv.id = "game-over-menu";
+    document.getElementById("game-view").appendChild(gameOverDiv);
+
+    //Now we want to create the buttons in the game over menu
+    const playAgainButton = document.createElement("button");
+    playAgainButton.id = "play-again";
+    playAgainButton.innerText = "Play Again";
+    playAgainButton.addEventListener("click", handlePlayAgain);
+    gameOverDiv.appendChild(playAgainButton);
+
+    const leaveGame = document.createElement("button");
+    leaveGame.id = "leave-game";
+    leaveGame.innerText = "Leave Game";
+    leaveGame.addEventListener("click", handleLeaveGame);
+    gameOverDiv.appendChild(leaveGame);
+}
+
+function removeGameOverMenu() {
+    const gameOverDiv = document.getElementById("game-over-menu");
+    
+    //Removing event listeners from buttons
+    document.getElementById("play-again").removeEventListener("click", handlePlayAgain);
+    document.getElementById("leave-game").removeEventListener("click", handleLeaveGame);
+
+    //Removing all elements in menu
+    while(gameOverDiv.firstChild) {
+        gameOverDiv.removeChild(gameOverDiv.firstChild);
+    }
+
+    gameOverDiv.remove();
 }
 
 
 /**
  * GAME FUNCTIONS 
  */
+function handlePlayAgain() {
+    console.log("Playing again");
+    leaveGame();
+
+    removeGameView();
+
+    addGameView();
+
+    joinQueue();
+}
+
+function handleLeaveGame() {
+    console.log("Leaving Game");
+
+    removeGameView();
+
+    addMultiplayerMenu();
+}
+
+
+function handleQuickJoinGame() {
+    removeMultiplayerMenu();
+
+    addGameView();
+
+    joinQueue();
+}
+
+
 function joinGameQueue() {
     //Remove queue menu
     removeQueueMenu();
