@@ -88,6 +88,7 @@ class GameState {
                 case ".":
                 case "(":
                 case "<":
+                case "\n":
                     count++;
                     break;
             }

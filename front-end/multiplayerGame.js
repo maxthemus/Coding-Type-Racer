@@ -1,4 +1,5 @@
 //VARIABLES
+const JOIN_URL = "http://localhost/code-racer/front-end/multiplayerGame.html";
 const USER_SERVICE = "http://localhost:3051/api/user/";
 const LOGIN_PAGE = "./login.html";
 const HOME_PAGE = "./index.html";
@@ -24,7 +25,24 @@ function handleLoad() {
         window.location.href = LOGIN_PAGE; //Reddirection to login page || Could be main page 
     }
     openSocketConnection(); //Opening socket connection
+}
 
+function handleSocketConnected() {
+    //Getting url parameters
+    const url = new URL(window.location.href);
+    const searchParams = url.searchParams;
+
+    if(searchParams.has("game")) {
+        console.log(searchParams.get("game"));
+        //We want to join the game right away        
+        addGameView();
+
+        joinGame(searchParams.get("game"));
+    } else {
+        inGame = false; //setting in game to false
+
+        addMultiplayerMenu();
+    }
 }
 
 
@@ -39,31 +57,13 @@ function openSocketConnection() {
     socket.addEventListener("error", handleConnectionError);
 
     //Handling connection opening
-    socket.addEventListener("open", handleSocketConnection);
+    socket.addEventListener("open", authenticateSocket);
 
     //Handling socket closing
     socket.addEventListener("close", handleSocketClose);
 
     //Handling socket message
     socket.addEventListener("message", handleSocketMessage);
-}
-
-function handleSocketConnection() {
-    authenticateSocket();
-
-    //Getting url parameters
-    const url = new URL(window.location.href);
-    const searchParams = url.searchParams;
-
-    if(searchParams.has("game")) {
-        console.log("HERE");
-        //We want to join the game right away
-        removeGameMenu();
-        displayGameMain(); 
-        joinGame(searchParams.get("game"));
-    } else {
-        inGame = false; //setting in game to false
-    }
 }
 
 //Function for handling connection error
@@ -85,8 +85,7 @@ function handleSocketMessage(event) {
     if("type" in message) {
         switch(message.type) {
             case "AUTH":
-                //On auth we want to enable game menu 
-                addMultiplayerMenu();
+                handleSocketConnected();
                 return;
             case "USER-JOIN":
                 console.log(message);
@@ -97,19 +96,21 @@ function handleSocketMessage(event) {
             case "USER-FINISHED":
                 handleUserFinished(message.gameState);
                 return;
-            case "GAME-START":
+           case "GAME-START":
                 handleGameStart();
                 return;
             case "GAME-UPDATE":
                 handleGameGraphicsUpdate(message.gameState, false);
                 return;
+            case "GAME-CREATED":
+                handleGameCreated(message.gameState);
+                return; 
         }
     }
 }
 
 function updatePlayerStatus() {
     console.log("sending update");
-    console.log(state);
 
     if(socket.readyState == WebSocket.OPEN) {
         socket.send(JSON.stringify({
@@ -157,7 +158,8 @@ function joinGame(gameId) {
 
 //Function handle closing socket
 function handleSocketClose() {
-    window.location.href = HOME_PAGE;
+    console.log("Closing socket");
+    //window.location.href = HOME_PAGE;
 }
 
 /**
@@ -167,9 +169,6 @@ function handleSocketClose() {
 //Function handles user joining a game
 function handleJoinGame(gameState) {
     if(!inGame) {
-        if(gameState.state == "WAITING") {
-            //displayStartButton();
-        }
         updateTextLength(gameState.text);
         
         handleGameGraphicsUpdate(gameState, true); 
@@ -180,10 +179,24 @@ function handleJoinGame(gameState) {
     }
 }
 
+function handleGameCreated(gameState) {
+    //We want to handle the game information for users to join in a link
+    joinLink = JOIN_URL + "?game=" + gameState.id;
+    console.log(joinLink); 
+
+    handleJoinGame(gameState);
+    addStartButton();
+    addGameLinkButton();
+    addLinkPopUp();
+}
+
 //Function handles game start
 function handleGameStart() {
     countValue = 10; //10 Seconds
     countFunc = setInterval(countDown, 1000); 
+
+    //Removing link popup
+    removeLinkPopUp();
 }
 //Countdown function
 function countDown() {
@@ -243,9 +256,6 @@ async function handleUserCharacterInput(event) {
             state++;
             updatePlayerStatus();
             gameFinished();
-
-            state = 0; //reset state
-            
         } else {
             switch(event.data) {
                 case " ":
@@ -316,6 +326,7 @@ function gameFinished() {
     document.getElementById("user-input").removeEventListener("input", handleUserCharacterInput);
 
     clearInterval(countFunc); //Stoping count function calls
+    countValue = 0;
 
     sendGameFinished();    
 
@@ -323,12 +334,15 @@ function gameFinished() {
 
     addGameOverMenu(); 
 
+    removeLeaveButton();
+
+    removeGameLinkButton();
+        
     inGame = false; //Setting in game to false 
 }
 
 function sendGameFinished() {
     console.log("Sending game finished");
-    
 
     if(socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({
@@ -337,6 +351,19 @@ function sendGameFinished() {
     } else {
         console.log("Socket isn't connected || error");
     } 
+}
+
+function sendCreateGame() {
+    console.log("Sending create game");
+
+    if(socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: "CREATE",
+            language: language
+        }));
+    } else {
+        console.log("Socket isn't connected || error");
+    }
 }
 
 function leaveGame() {
@@ -357,12 +384,21 @@ function clearGameData() {
 }
 
 //ORIGINAL FUNCTION IN SINGLEPLAYER
-function handleTabs(event) {
+async function handleTabs(event) {
+
     if(event.key === 'Tab') {
         event.preventDefault();
         event.target.value = event.target.value +  "    ";
 
-        updateTextColors();
+        let valid = await updateTextColors();
+        if(valid) {
+            const arrayValue = document.getElementById("user-input").value.split('');
+            indexPtr = (indexPtr + arrayValue.length);
+            document.getElementById("user-input").value = "";
+                    
+            state+= 4; //Incrementing state
+            updatePlayerStatus();
+        }
     } 
 }
 
@@ -379,7 +415,7 @@ async function updateTextColors() {
         if(arrayQuote[cursorIndex + 1] != null) {
             arrayQuote[cursorIndex + 1].classList.remove("cursor");
         }
-        if(arrayQuote[cursorIndex + 1] != null) {
+        if(arrayQuote[cursorIndex - 1] != null) {
             arrayQuote[cursorIndex - 1].classList.remove("cursor");
         }
         //Placing cursor
@@ -412,6 +448,8 @@ async function updateTextColors() {
  */
 let language = "RANDOM";
 let gameLength;
+let joinLink = "";
+let queueType = "NORMAL"
 
 /**
  * UPDATING CODE REFACTORING
@@ -482,6 +520,8 @@ function handleJoinGameQueue() {
 
 function handleCreateGame() {
     removeMultiplayerMenu(); 
+
+    addCreateGameMenu();
 }
 
 
@@ -508,7 +548,7 @@ function addQueueMenu() {
     settingsDiv.appendChild(languageSettings);
 
     //Adding language selector
-    addLanguageSelector();
+    addLanguageSelector(languageSettings);
 
     
     //Creating div for buttons 
@@ -558,7 +598,9 @@ function removeQueueMenu() {
     }
 }
 
-function addLanguageSelector() {
+function addLanguageSelector(parentNode) {
+    language = "RANDOM"; //resetting the value of language
+
     //Creating selector tag
     const languageSelector = document.createElement("select");
     languageSelector.name = "languages";
@@ -596,7 +638,7 @@ function addLanguageSelector() {
     languageSelector.addEventListener("change", handleLanguageChange);
 
     //Adding selector to the div
-    document.getElementById("language-settings").appendChild(languageSelector);
+    parentNode.appendChild(languageSelector);
 }
 
 function removeLanguageSelector() {
@@ -626,6 +668,7 @@ function handleQueueBackButton () {
  * Functions for displaying game view
  */
 function addGameView() {
+    //Creating div for game information 
     const gameView = document.createElement("div");
     gameView.id = "game-view";
     document.getElementById("multiplayer-main").appendChild(gameView);
@@ -633,17 +676,124 @@ function addGameView() {
     addGameInfo();
 
     addGameDisplay();
+
+    addLeaveButton();
 }
 
 function removeGameView() {
     const gameView = document.getElementById("game-view");
 
+    removeLeaveButton();
+
+    removeGameLinkButton();
+
     removeGameInfo();
 
     removeGameDisplay();
 
+    //Removing start button if exists
+    if(document.getElementById("start-button") !== null)  {
+        removeStartButton(); 
+    }
+
     gameView.remove();
 }
+
+function addLinkPopUp() {
+    if(document.getElementById("game-link-div") == null) {
+        const linkDiv = document.createElement("div");
+        linkDiv.id = "game-link-div";
+
+        //Appending linkDiv to multiplayer main
+        document.getElementById("multiplayer-main").appendChild(linkDiv);
+
+        //Adding link to div
+        const linkText = document.createElement("p");
+        linkText.id = "game-link-text";
+        linkText.innerText = joinLink;
+        linkDiv.appendChild(linkText);
+
+        //Adding copy link button
+        const copyButton = document.createElement("button");
+        copyButton.id = "copy-button";
+        copyButton.innerText = "Copy Link";
+        copyButton.addEventListener("click", handleCopyLinkButton);
+        linkDiv.appendChild(copyButton);
+    
+        //Close pop up button
+        const closeButton = document.createElement("button");
+        closeButton.id = "close-button";
+        closeButton.innerText = "Close";
+        closeButton.addEventListener("click", removeLinkPopUp);
+        linkDiv.appendChild(closeButton);
+    
+        window.addEventListener("click", handleLinkPopUp);
+    } 
+
+}
+function removeLinkPopUp() {
+    //Removing event listeners
+    const linkDiv = document.getElementById("game-link-div");
+    
+    if(linkDiv != null) {
+        //Removing event listeners for buttons
+        document.getElementById("copy-button").removeEventListener("click", handleCopyLinkButton);
+        document.getElementById("close-button").removeEventListener("click", removeLinkPopUp);
+
+       while (linkDiv.firstChild) {
+            linkDiv.removeChild(linkDiv.firstChild);
+        }
+
+        linkDiv.remove();
+        window.removeEventListener("click", handleLinkPopUp);    
+    }
+}
+
+//Function for adding leave button
+function addLeaveButton() {
+    console.log("Adding leave button");
+    const mainDiv = document.getElementById("multiplayer-main");
+
+    const leaveButton = document.createElement("button");
+    leaveButton.id = "leave-button";
+    leaveButton.innerText = "Leave Game";
+    leaveButton.addEventListener("click", handleLeaveGame);
+    mainDiv.appendChild(leaveButton);
+}
+
+
+//Function for removing leave button
+function removeLeaveButton() {
+    const leaveButton = document.getElementById("leave-button");
+
+    if(leaveButton != null) {
+        //Removing event listeners
+        leaveButton.removeEventListener("click", handleLeaveGame);
+        leaveButton.remove();
+    }
+}
+
+//Function for adding invite link button
+function addGameLinkButton() {
+    const mainDiv = document.getElementById("multiplayer-main");
+
+    const inviteButton = document.createElement("button");
+    inviteButton.id = "invite-button";
+    inviteButton.innerText = "Invite Players";
+    inviteButton.addEventListener("click", handleInviteButton);
+    mainDiv.append(inviteButton);
+}
+
+//Function for removing intive link button
+function removeGameLinkButton() {
+    const inviteButton = document.getElementById("invite-button");
+
+    if(inviteButton != null) {
+        inviteButton.removeEventListener("click", handleInviteButton);
+        inviteButton.remove();
+    }
+}
+
 
 //Functions for sub components of gameView
 function addGameInfo() {
@@ -684,11 +834,13 @@ function addGameCounter() {
 function removeGameCounter () {
     const counterDiv = document.getElementById("game-counter");
 
-    while(counterDiv.firstChild) {
-        counterDiv.removeChild(counterDiv.firstChild);
-    }
+    if(counterDiv != null) {
+        while (counterDiv.firstChild) {
+            counterDiv.removeChild(counterDiv.firstChild);
+        }
 
-    counterDiv.remove();
+        counterDiv.remove();
+    }
 }
 
 function addGameTable() {
@@ -732,12 +884,15 @@ function addUser(userId, username) {
     const nameCol = document.createElement("td");
     nameCol.id = userId + "-name";
     nameCol.innerText = username;
+    nameCol.classList.add("name-col");
 
     const stateCol = document.createElement("td");
     stateCol.id = userId + "-state";
+    stateCol.classList.add("state-col");
 
     const placementCol = document.createElement("td");
     placementCol.id = userId + "-placement";
+    placementCol.classList.add("placement-col");
 
     //Appending cols to row
     userRow.appendChild(nameCol);
@@ -862,23 +1017,95 @@ function removeGameOverMenu() {
     gameOverDiv.remove();
 }
 
+function addCreateGameMenu() {
+    const mainDiv = document.getElementById("multiplayer-main");
+
+    const title = document.createElement("h3");
+    title.innerText = "Creating Game";
+    mainDiv.appendChild(title);
+
+
+    const languageSettings = document.createElement("div");
+    languageSettings.id = "language-settings";
+    mainDiv.appendChild(languageSettings);
+
+    addLanguageSelector(languageSettings);
+
+    //Creating the create Game button
+    const createButton = document.createElement("button");
+    createButton.id = "create-button";
+    createButton.innerText = "Create Game";
+    createButton.addEventListener("click", handleSendCreateGame);
+    mainDiv.appendChild(createButton);
+}
+
+function removeCreateGameMenu() {
+    const mainDiv = document.getElementById("multiplayer-main");
+
+    //Removing event listeners
+    document.getElementById("create-button").removeEventListener("click", handleSendCreateGame);
+
+    //Removing selectors
+    removeLanguageSelector();
+
+    //Removing all elements
+    while(mainDiv.firstChild) {
+        mainDiv.removeChild(mainDiv.firstChild);
+    }
+}
+
+function addStartButton() {
+    const mainDiv = document.getElementById("multiplayer-main");
+
+    const startButton = document.createElement("button");
+    startButton.id = "start-button";
+    startButton.innerText = "Start Game";
+    startButton.addEventListener("click", sendStartGame);
+
+    mainDiv.appendChild(startButton);
+}
+
+function removeStartButton() {
+    const startButton = document.getElementById("start-button");
+    startButton.removeEventListener("click", sendStartGame);
+    startButton.remove();
+}
+
 
 /**
  * GAME FUNCTIONS 
  */
 function handlePlayAgain() {
     console.log("Playing again");
+    inGame = false;    
+
     leaveGame();
 
     removeGameView();
 
     addGameView();
 
-    joinQueue();
+    switch(queueType) {
+        case "PRIVATE":
+            sendCreateGame(); 
+            break;
+        case "NORMAL":
+        default:
+            joinQueue();
+            break;
+    }
 }
 
 function handleLeaveGame() {
     console.log("Leaving Game");
+
+    //Clearing count information
+    clearInterval(countFunc); //Stoping count function calls
+    countValue = 0;
+
+    inGame = false; //Setting as not in game    
+
+    leaveGame();
 
     removeGameView();
 
@@ -892,6 +1119,40 @@ function handleQuickJoinGame() {
     addGameView();
 
     joinQueue();
+
+    queueType = "NORMAL";
+}
+
+function handleSendCreateGame() {
+    removeCreateGameMenu();
+
+    addGameView();
+
+    sendCreateGame();
+
+    queueType = "PRIVATE"; //Setting the queue type
+}
+
+function handleLinkPopUp(event) {
+    const linkDiv = document.getElementById("game-link-div");
+    const outsidePopUp = !linkDiv.contains(event.target);    
+
+    if(outsidePopUp && event.target != document.getElementById("invite-button")) {
+        removeLinkPopUp();
+    }
+}
+
+function handleInviteButton() {
+    addLinkPopUp();
+}
+
+function handleCopyLinkButton(event) {
+    navigator.clipboard.writeText(joinLink).then(() => {
+        event.target.innerText = "Copied!";
+        setTimeout(() => {
+            event.target.innerText = "Copy Link";
+        }, 1500);
+    });
 }
 
 
@@ -904,7 +1165,10 @@ function joinGameQueue() {
 
     //Send join game request
     joinQueue();
+
+    queueType = "NORMAL";
 }
+
 
 function handleGameGraphicsUpdate(gameState, updateText) {
     if(updateText) {
@@ -925,12 +1189,21 @@ function updateTextDisplay(text) {
     });
 }
 
-function updateUserStatus(statusMap) {
-    for(const [key, value] of statusMap) {
-        const status = document.getElementById(key+"-status");
-        if(status !== null) {
-            status.innerText = value; 
+function updateUserStatus(userId, userState) {
+    const state = document.getElementById(userId+"-state");
+
+    if(state != null) {
+        const characterCountTotal = 28;
+        const completionPercent = userState/(gameLength+1);
+        const progress = Math.floor(completionPercent * characterCountTotal);
+        console.log(completionPercent + " : " + progress);
+
+        let string = "";
+        for(let index = 0; index < progress; index++) {
+            const number = Math.round(Math.random());
+            string += number + "";
         }
+        state.innerText = string;
     }
 }
 
@@ -952,17 +1225,19 @@ async function updateUserInformation(users, statusMap) {
 
 function updateTextLength(text) {
     let count = 0;
-    for(let index in text) {
-        switch(text[index]) {
+    for (let index in text) {
+        switch (text[index]) {
             case " ":
             case ".":
             case "(":
             case "<":
+            case"\n":
                 count++;
                 break;
         }
     }
-    gameLength = count+1; //+1 because the final character
+    gameLength = count;
+    console.log('len == ' + gameLength);
 }
 
 

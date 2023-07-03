@@ -104,6 +104,9 @@ socketServer.on("connection", (socket) => {
                     case "FINISHED":
                         handleGameFinshed(socket, CLIENT_SOCKETS.get(socket));
                         return;
+                    case "CREATE":
+                        handleCreateGame(socket, CLIENT_SOCKETS.get(socket), message.language);
+                        return
                 }
             }
             socket.send(JSON.stringify({
@@ -227,12 +230,24 @@ function handleUserJoinGame(socket, userId, gameId) {
     }
 }
 
+function handleCreateGame(socket, userId, language) {
+    console.log("User creating game");
+
+    if(gameServiceSocket.readyState == WebSocket.OPEN) {
+        gameServiceSocket.send(JSON.stringify({
+            type: "CREATE",
+            userId: userId,
+            language: language
+        }));
+    }
+}
 
 
 //Handling client socket connected to the GAME_SERVICE
 gameServiceSocket.on("message", (data) => {
     const message = JSON.parse(data);
     console.log(message);
+    console.log(message.type);
 
     //Getting type of message 
     if("type" in message) {
@@ -252,6 +267,10 @@ gameServiceSocket.on("message", (data) => {
                 return;
             case "USER-FINISHED":
                 finishedGameResponse(message.userId, message.placement, message.gameState);
+                return;
+            case "GAME-CREATED":
+                gameCreatedResponse(message.userId, message.gameState);
+                console.log("HERE");
                 return;
         }
     }
@@ -393,5 +412,17 @@ function finishedGameResponse(userId, placement, gameState) {
         if("players" in gameState) {
             broadCastObject(gameState.players, finishedObj, "USER-FINISHED");
         }
+    }
+}
+
+function gameCreatedResponse(userId, gameState) {
+    if(ID_SOCKET.has(userId)) {
+        console.log("Sending resonse");
+        const socket = ID_SOCKET.get(userId);
+
+        socket.send(JSON.stringify({
+            type: "GAME-CREATED",
+            gameState: gameState
+        }));
     }
 }

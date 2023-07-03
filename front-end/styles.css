@@ -229,11 +229,7 @@ main button:hover {
 }
 
 /* styles for start button */
-#start-button {
-    align-self: flex-end;
-    height: 50px;
-    font-size: 30px;
-}
+
 
 /* styles for game div */
 main #game-main {
@@ -374,3 +370,31 @@ span {
     flex-direction: column;
     justify-content: space-between;
 }
+
+
+#start-button, #leave-button, #invite-button {
+    align-self: flex-end;
+    height: 50px;
+    font-size: 30px;
+}
+
+
+/* GAME POP UP */
+#game-link-div {
+    background-color: #384242;
+    border: 2px solid #1c5b97;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+}
+
+/* table styles */
+.state-col {
+    min-width: 300px;
+}
+
+.placement-col, .name-col {
+    width: 50px;
+}
+
