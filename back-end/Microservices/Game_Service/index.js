@@ -107,6 +107,7 @@ async function handleUserJoinGame(socket, userId, gameId) {
         if(gameId === null) {
             //Find game for user to join
             let gameToJoin = await Promise.resolve(searchForGame());
+            console.log(gameToJoin);
             if(!gameToJoin) { //Checking if game was found
                 //Game was not found
                 gameToJoin = await Promise.resolve(createGame("RANDOM", false)); //Random language and not private game
@@ -174,7 +175,7 @@ function searchForGame() {
     return new Promise((res, rej) => {
         if(waitingGames.length > 0) {
             for(let index in waitingGames) {
-                if(waitingGames.type == "NORMAL") {
+                if(waitingGames[index].type == "NORMAL") {
                     return res(waitingGames[index]); //Game was found
                 } 
             }            
@@ -306,6 +307,8 @@ function handleUserFinish(socket, userId) {
     const gameId = userToGame.get(userId);
     const usersGame = idToGame.get(gameId);
 
+    console.log(usersGame);
+    
     //Checking if user is in game
     if(usersGame) {
         //Checking if gameState is "RUNNING"

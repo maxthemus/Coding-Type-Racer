@@ -109,13 +109,13 @@ function handleSocketMessage(event) {
     }
 }
 
-function updatePlayerStatus() {
+function updatePlayerStatus(updatedState) {
     console.log("sending update");
 
     if(socket.readyState == WebSocket.OPEN) {
         socket.send(JSON.stringify({
             type: "UPDATE",
-            userState: state
+            userState: updatedState
         }));
     } else {
         console.log("Socket not open || ERROR");
@@ -251,10 +251,10 @@ async function handleUserCharacterInput(event) {
     const arrayValue = document.getElementById("user-input").value.split('');
 
     let valid = await updateTextColors();
+    console.log(valid);
     if(valid) {
         if(indexPtr + arrayValue.length >= arrayQuote.length) {
-            state++;
-            updatePlayerStatus();
+            updatePlayerStatus(++state);
             gameFinished();
         } else {
             switch(event.data) {
@@ -266,19 +266,7 @@ async function handleUserCharacterInput(event) {
                     indexPtr = (indexPtr + arrayValue.length);
                     document.getElementById("user-input").value = "";
                     
-                    state++; //Incrementing state
-                    updatePlayerStatus();
-                    break;
-                case null:
-                    //Checking if input was new line
-                    if(event.inputType == "insertLineBreak") {
-                        console.log("NEW LINE");
-                        indexPtr = (indexPtr + arrayValue.length);
-                        document.getElementById("user-input").value = "";
-                    
-                        state++; //Incrementing state
-                        updatePlayerStatus();
-                    }
+                    updatePlayerStatus(++state);
                     break;
             } 
         }
@@ -289,6 +277,8 @@ async function handleUserCharacterInput(event) {
         arrayQuote[indexPtr + arrayValue.length].classList.remove("correct");
         arrayQuote[indexPtr + arrayValue.length].classList.add("incorrect");
     }
+
+    console.log(state);
 }
 
 function sendStartGame() {
@@ -385,7 +375,6 @@ function clearGameData() {
 
 //ORIGINAL FUNCTION IN SINGLEPLAYER
 async function handleTabs(event) {
-
     if(event.key === 'Tab') {
         event.preventDefault();
         event.target.value = event.target.value +  "    ";
@@ -397,9 +386,10 @@ async function handleTabs(event) {
             document.getElementById("user-input").value = "";
                     
             state+= 4; //Incrementing state
-            updatePlayerStatus();
+            updatePlayerStatus(state);
         }
     } 
+    console.log(state);
 }
 
 //ORIGINAL FUNCTION IS IN SINGLEPLAYER
@@ -477,18 +467,20 @@ function addMultiplayerMenu() {
     //language queue button
     const menuQueueButton = document.createElement("button");
     menuQueueButton.id = "multiplayer-menu-queue";
-    menuQueueButton.innerText = "Join Queue";
+    menuQueueButton.innerText = "Langauge Queue";
     menuQueueButton.addEventListener("click", handleJoinGameQueue);
     menuDiv.appendChild(menuQueueButton);
 
     //Create game button
     const menuCreateButton = document.createElement("button");
     menuCreateButton.id = "multiplayer-menu-create";
-    menuCreateButton.innerText = "Create Game";
+    menuCreateButton.innerText = "Play With Friends";
     menuCreateButton.addEventListener("click", handleCreateGame);
     menuDiv.appendChild(menuCreateButton);
 
     mainDiv.appendChild(menuDiv);
+
+    mainDiv.classList.add("menu-styles");
 }
 
 function removeMultiplayerMenu() {
@@ -509,6 +501,8 @@ function removeMultiplayerMenu() {
     while(mainDiv.firstChild) {
         mainDiv.removeChild(mainDiv.firstChild);
     }
+
+    mainDiv.classList.remove("menu-styles");
 }
 
 
@@ -570,6 +564,8 @@ function addQueueMenu() {
     buttonDiv.appendChild(queueButton);
 
     mainDiv.appendChild(buttonDiv);
+
+    mainDiv.classList.add("language-styles");
 }
 
 function removeQueueMenu() {
@@ -596,6 +592,8 @@ function removeQueueMenu() {
     while(mainDiv.firstChild) {
         mainDiv.removeChild(mainDiv.firstChild);
     }
+
+    mainDiv.classList.remove("language-styles");
 }
 
 function addLanguageSelector(parentNode) {
@@ -677,26 +675,23 @@ function addGameView() {
 
     addGameDisplay();
 
-    addLeaveButton();
+    addButtonDisplay();    
+
+    document.getElementById("multiplayer-main").classList.add("game-styles");
 }
 
 function removeGameView() {
     const gameView = document.getElementById("game-view");
 
-    removeLeaveButton();
-
-    removeGameLinkButton();
+    removeButtonDisplay();    
 
     removeGameInfo();
 
     removeGameDisplay();
 
-    //Removing start button if exists
-    if(document.getElementById("start-button") !== null)  {
-        removeStartButton(); 
-    }
-
     gameView.remove();
+
+    document.getElementById("multiplayer-main").classList.remove("game-styles");
 }
 
 function addLinkPopUp() {
@@ -752,13 +747,13 @@ function removeLinkPopUp() {
 //Function for adding leave button
 function addLeaveButton() {
     console.log("Adding leave button");
-    const mainDiv = document.getElementById("multiplayer-main");
+    const buttonDiv = document.getElementById("button-div");
 
     const leaveButton = document.createElement("button");
     leaveButton.id = "leave-button";
     leaveButton.innerText = "Leave Game";
     leaveButton.addEventListener("click", handleLeaveGame);
-    mainDiv.appendChild(leaveButton);
+    buttonDiv.appendChild(leaveButton);
 }
 
 
@@ -773,15 +768,43 @@ function removeLeaveButton() {
     }
 }
 
+//Function for adding button display at bottom of game div
+function addButtonDisplay() {
+    const mainDiv = document.getElementById("multiplayer-main");
+
+    //Creating new div
+    const buttonDiv = document.createElement("div");
+    buttonDiv.id = "button-div";
+    mainDiv.appendChild(buttonDiv);
+
+    addLeaveButton();
+}
+
+function removeButtonDisplay() {
+    const buttonDiv = document.getElementById("button-div");
+
+    //Removing children
+    removeLeaveButton();
+    removeGameLinkButton();
+    //Removing start button if exists
+    if(document.getElementById("start-button") !== null)  {
+        removeStartButton(); 
+    }
+
+    //removing the div
+    buttonDiv.remove();
+}
+
+
 //Function for adding invite link button
 function addGameLinkButton() {
-    const mainDiv = document.getElementById("multiplayer-main");
+    const buttonDiv = document.getElementById("button-div");
 
     const inviteButton = document.createElement("button");
     inviteButton.id = "invite-button";
     inviteButton.innerText = "Invite Players";
     inviteButton.addEventListener("click", handleInviteButton);
-    mainDiv.append(inviteButton);
+    buttonDiv.append(inviteButton);
 }
 
 //Function for removing intive link button
@@ -890,6 +913,13 @@ function addUser(userId, username) {
     stateCol.id = userId + "-state";
     stateCol.classList.add("state-col");
 
+    //Creating player progress bar
+    const progressDiv = document.createElement("div");
+    progressDiv.id = userId+"-progress";
+    progressDiv.style.width = "0%";
+    progressDiv.classList.add("progress-div");
+    stateCol.appendChild(progressDiv);
+
     const placementCol = document.createElement("td");
     placementCol.id = userId + "-placement";
     placementCol.classList.add("placement-col");
@@ -906,6 +936,10 @@ function addUser(userId, username) {
 function removeUser(userId) {
     //Removing all child nodes
     const userRow = document.getElementById(userId);
+
+    //Removing progress bar
+    const userState = document.getElementById(userId +"-state");
+    userState.removeChild(firstChild.remove()); 
 
     while(userRow.firstChild) {
         userRow.removeChild(userRow.firstChild);
@@ -1021,7 +1055,7 @@ function addCreateGameMenu() {
     const mainDiv = document.getElementById("multiplayer-main");
 
     const title = document.createElement("h3");
-    title.innerText = "Creating Game";
+    title.innerText = "Play With Friends";
     mainDiv.appendChild(title);
 
 
@@ -1037,6 +1071,8 @@ function addCreateGameMenu() {
     createButton.innerText = "Create Game";
     createButton.addEventListener("click", handleSendCreateGame);
     mainDiv.appendChild(createButton);
+
+    mainDiv.classList.add("friend-styles");
 }
 
 function removeCreateGameMenu() {
@@ -1052,17 +1088,19 @@ function removeCreateGameMenu() {
     while(mainDiv.firstChild) {
         mainDiv.removeChild(mainDiv.firstChild);
     }
+    
+    mainDiv.classList.remove("friend-styles");
 }
 
 function addStartButton() {
-    const mainDiv = document.getElementById("multiplayer-main");
+    const buttonDiv = document.getElementById("button-div");
 
     const startButton = document.createElement("button");
     startButton.id = "start-button";
     startButton.innerText = "Start Game";
     startButton.addEventListener("click", sendStartGame);
 
-    mainDiv.appendChild(startButton);
+    buttonDiv.appendChild(startButton);
 }
 
 function removeStartButton() {
@@ -1190,20 +1228,12 @@ function updateTextDisplay(text) {
 }
 
 function updateUserStatus(userId, userState) {
-    const state = document.getElementById(userId+"-state");
+    const state = document.getElementById(userId+"-progress");
 
     if(state != null) {
         const characterCountTotal = 28;
-        const completionPercent = userState/(gameLength+1);
-        const progress = Math.floor(completionPercent * characterCountTotal);
-        console.log(completionPercent + " : " + progress);
-
-        let string = "";
-        for(let index = 0; index < progress; index++) {
-            const number = Math.round(Math.random());
-            string += number + "";
-        }
-        state.innerText = string;
+        const completionPercent = (userState/(gameLength+1)) * 100;
+        state.style.width = completionPercent + "%";
     }
 }
 
@@ -1231,7 +1261,6 @@ function updateTextLength(text) {
             case ".":
             case "(":
             case "<":
-            case"\n":
                 count++;
                 break;
         }
