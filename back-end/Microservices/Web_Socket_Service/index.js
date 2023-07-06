@@ -104,6 +104,9 @@ socketServer.on("connection", (socket) => {
                     case "FINISHED":
                         handleGameFinshed(socket, CLIENT_SOCKETS.get(socket));
                         return;
+                    case "CREATE":
+                        handleCreateGame(socket, CLIENT_SOCKETS.get(socket), message.language);
+                        return
                 }
             }
             socket.send(JSON.stringify({
@@ -227,12 +230,24 @@ function handleUserJoinGame(socket, userId, gameId) {
     }
 }
 
+function handleCreateGame(socket, userId, language) {
+    console.log("User creating game");
+
+    if(gameServiceSocket.readyState == WebSocket.OPEN) {
+        gameServiceSocket.send(JSON.stringify({
+            type: "CREATE",
+            userId: userId,
+            language: language
+        }));
+    }
+}
 
 
 //Handling client socket connected to the GAME_SERVICE
 gameServiceSocket.on("message", (data) => {
     const message = JSON.parse(data);
     console.log(message);
+    console.log(message.type);
 
     //Getting type of message 
     if("type" in message) {
@@ -242,7 +257,7 @@ gameServiceSocket.on("message", (data) => {
                 joinGameResponse(message.gameState);
                 return;
             case "USER-LEAVE":
-                leaveGameResponse(message.userId);
+                leaveGameResponse(message.userId, message.players);
                 return;
             case "GAME-UPDATE":
                 updateGameResponse(message.gameState);
@@ -252,6 +267,10 @@ gameServiceSocket.on("message", (data) => {
                 return;
             case "USER-FINISHED":
                 finishedGameResponse(message.userId, message.placement, message.gameState);
+                return;
+            case "GAME-CREATED":
+                gameCreatedResponse(message.userId, message.gameState);
+                console.log("HERE");
                 return;
         }
     }
@@ -318,7 +337,7 @@ function handleUserLeaveGame(socket, userId) {
 
 
 //Function for sending a leaving game response
-function leaveGameResponse(userId) {
+function leaveGameResponse(userId, players) {
     if(ID_SOCKET.has(userId)) {
         const socket = ID_SOCKET.get(userId);
         socket.send(JSON.stringify({
@@ -326,6 +345,17 @@ function leaveGameResponse(userId) {
             message: "You have left the game!"
         }));
     }
+
+    //Sending message to everyone else to say they have left game
+    for(let index in players) {
+        if(ID_SOCKET.has(players[index])) {
+            const socket = ID_SOCKET.get(players[index]);
+            socket.send(JSON.stringify({
+                type: "USER-LEAVE",
+                player: userId
+            }));
+        }
+    } 
 }
 
 //Function for sending an update response to users in game
@@ -393,5 +423,17 @@ function finishedGameResponse(userId, placement, gameState) {
         if("players" in gameState) {
             broadCastObject(gameState.players, finishedObj, "USER-FINISHED");
         }
+    }
+}
+
+function gameCreatedResponse(userId, gameState) {
+    if(ID_SOCKET.has(userId)) {
+        console.log("Sending resonse");
+        const socket = ID_SOCKET.get(userId);
+
+        socket.send(JSON.stringify({
+            type: "GAME-CREATED",
+            gameState: gameState
+        }));
     }
 }

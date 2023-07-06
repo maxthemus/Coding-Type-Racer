@@ -8,7 +8,7 @@ window.addEventListener("load", handlePageLoad);
 
 function handlePageLoad() {
     //Setting logged in status
-    loggedIn = (window.sessionStorage.getItem("username") !== null);
+    loggedIn = (window.localStorage.getItem("username") !== null);
 }
 
 

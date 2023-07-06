@@ -2,6 +2,7 @@
 <html>
     <head>
         <link rel="stylesheet" href="./styles.css" />
+        <link rel="stylesheet" href="./styles/multiplayerStyles.css">
     </head>
     <body>
         <!-- header for page-->    
@@ -16,41 +17,10 @@
         </header>
 
 
-        <main>
-            <div id="queue-menu" style="display: none;">
-                <h3 style="text-align: center;">Multiplayer</h3>
-                <button id="queue-button">Join Game</button>
-
-                <p id="error-message"></p>
-            </div>
-
-            <div id="game-main" style="display: none;">
-                <div id="game-timer">
-                    <p id="counter">...</p> 
-                </div>
-
-                <div id="player-info">
-                    <table id="info-table">
-                        <!--
-                        <tr>
-                            <td>Player name</td>
-                            <td>10001001001</td>
-                        </tr>
-                        -->
-
-                    </table>
-                </div>
-
-                <div id="game-display">
-                    <div id="text-display"></div>
-                
-                    <div id="input-area">
-                        <textArea class="text_area" id="user-input" disabled></textArea>
-                    </div>
-                </div> 
-            </main>
-            <script src="./multiplayerGame.js"></script>
-            <script type="module" src="./modules/header.js"></script>
-        </div>
+        <main id="multiplayer-main">
+        
+        </main>
+        <script src="./multiplayerGame.js"></script>
+        <script type="module" src="./modules/header.js"></script>
     </body>
 </html>

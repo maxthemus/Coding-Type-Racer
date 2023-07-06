@@ -1,5 +1,5 @@
 //Services
-const DB_SERVICE = "http://127.0.0.1:3054/api/data";
+const DB_SERVICE = "http://122.58.68.153:3054/api/data";
 
 //Pages
 const HOME_PAGE = "./index.html";
@@ -24,7 +24,7 @@ function showMenu() {
     document.getElementById("menu").style.display = "flex";
     
     //Selector event handlers
-    document.getElementById("language-select").addEventListener("change", updateLangauge);
+    document.getElementById("language-select").addEventListener("change", updateLanguage);
     document.getElementById("difficulty-select").addEventListener("change", updateDifficulty);
 
     //Attaching event listener to the player button
@@ -34,7 +34,7 @@ function showMenu() {
 function removeMenu() {
     document.getElementById("menu").style.display = "none";
 
-    document.getElementById("language-select").removeEventListener("change", updateLangauge);
+    document.getElementById("language-select").removeEventListener("change", updateLanguage);
     document.getElementById("difficulty-select").removeEventListener("change", updateDifficulty);
 
     //Attaching event listener to the player button
@@ -91,7 +91,7 @@ function gameFinished() {
     showMenu();
 }
 
-function updateLangauge(event) {
+function updateLanguage(event) {
     language = event.target.value;
     const lowerCase = language.toLowerCase();
     document.getElementById("game-language").innerText = language.charAt(0) + lowerCase.slice(1);

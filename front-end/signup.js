@@ -3,11 +3,11 @@ const HOME_PAGE = "./index.html";
 const LOGIN_PAGE = "./login.html";
 const SIGNUP_PAGE = "./signup.html";
 
-const USER_SERVICE = "http://127.0.0.1:3051/api/user/signup";
+const USER_SERVICE = "http://122.58.68.153:3051/api/user/signup";
 
 //Checking if user is already logged in
 window.addEventListener("load", () => {
-    if(window.sessionStorage.getItem("username") !== null) {
+    if(window.localStorage.getItem("username") !== null) {
         window.location.href = HOME_PAGE;
     }
 });
@@ -45,7 +45,7 @@ document.getElementById("signup-form").addEventListener("submit", (event) => {
         };
 
         //Sending signup request to user service
-        fetch("http://127.0.0.1:3051/api/user/signup", {
+        fetch(USER_SERVICE, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

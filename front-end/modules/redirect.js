@@ -1,10 +1,10 @@
 //PAGES
-const HOME_PAGE = "http://localhost/code-racer/front-end/index.html";
-const LOGIN_PAGE = "http://localhost/code-racer/front-end/login.html";
-const SIGNUP_PAGE = "http://localhost/code-racer/front-end/signup.html";
-const PROFILE_PAGE = "http://localhost/code-racer/front-end/profile.html";
-const SINGLEPLAYER_GAME_PAGE = "http://localhost/code-racer/front-end/singleplayerGame.html";
-const MULTIPLAYER_GAME_PAGE = "http://localhost/code-racer/front-end/multiplayerGame.html";
+const HOME_PAGE = "http://122.58.68.153/code-racer/front-end/index.html";
+const LOGIN_PAGE = "http://122.58.68.153/code-racer/front-end/login.html";
+const SIGNUP_PAGE = "http://122.58.68.153/code-racer/front-end/signup.html";
+const PROFILE_PAGE = "http://122.58.68.153/code-racer/front-end/profile.html";
+const SINGLEPLAYER_GAME_PAGE = "http://122.58.68.153/code-racer/front-end/singleplayerGame.html";
+const MULTIPLAYER_GAME_PAGE = "http://122.58.68.153/code-racer/front-end/multiplayerGame.html";
 
 //Redirection functions
 export function redirectHomePage() {
@@ -36,14 +36,14 @@ export function redirectSinglePlayerPage() {
 }
 
 export function redirectMultiPlayerPage() {
-    if(window.localStorage.href != MULTIPLAYER_GAME_PAGE) {
+    if(window.location.href != MULTIPLAYER_GAME_PAGE) {
         window.location.href = MULTIPLAYER_GAME_PAGE;
     }
 }
 
 export function logoutUser() {
     //Resetting user data
-    window.sessionStorage.clear(); //clearing all session data
+    window.localStorage.clear(); //clearing all session data
 
     if(window.location.href != "index.html") {
         window.location.href="./index.html"

@@ -72,6 +72,9 @@ socketServer.on("connection", (socket) => {
                     console.log("User is updating");
                     handleUserUpdate(socket, message.userId, message.userStatus);
                     break;    
+                case "CREATE":
+                    console.log("User is creating a game");
+                    handleUserCreateGame(socket, message.userId, message.language);
             }
         }
 
@@ -104,9 +107,10 @@ async function handleUserJoinGame(socket, userId, gameId) {
         if(gameId === null) {
             //Find game for user to join
             let gameToJoin = await Promise.resolve(searchForGame());
+            console.log(gameToJoin);
             if(!gameToJoin) { //Checking if game was found
                 //Game was not found
-                gameToJoin = await Promise.resolve(createGame());
+                gameToJoin = await Promise.resolve(createGame("RANDOM", false)); //Random language and not private game
             }  
                 
             //JOIN user to game
@@ -122,6 +126,7 @@ async function handleUserJoinGame(socket, userId, gameId) {
             //AUTO GAME STARTER
             //Updating game State on clients
             if(gameToJoin.type == "NORMAL") {
+                console.log("Auto Starting Game : " + gameToJoin.id);
                 gameAutoStarter(gameToJoin, socket);
             }
         } else {
@@ -136,12 +141,28 @@ async function handleUserJoinGame(socket, userId, gameId) {
                         type: "USER-JOINED",
                         gameState: gameToJoin.stateToObj()
                     }));
+                } else {
+                    console.log("GAME ISN'T PRIVATE");
                 }
             }
         }
     } else {
         //USER is in a game 
         console.log("User is already in a game");
+    }
+}
+
+async function handleUserCreateGame(socket, userId, language) {
+    if(!userToGame.get(userId)) {
+        const game = await Promise.resolve(createGame(language, true));
+
+        joinGame(userId, game); //Joining user to the game
+
+        socket.send(JSON.stringify({
+            type: "GAME-CREATED",
+            userId: userId,
+            gameState: game.stateToObj()
+        }));
     }
 }
 
@@ -153,10 +174,14 @@ async function handleUserJoinGame(socket, userId, gameId) {
 function searchForGame() {
     return new Promise((res, rej) => {
         if(waitingGames.length > 0) {
-            res(waitingGames[0]);
-        } else {
-            res(null);
-        }
+            for(let index in waitingGames) {
+                if(waitingGames[index].type == "NORMAL") {
+                    return res(waitingGames[index]); //Game was found
+                } 
+            }            
+
+        } 
+        return res(null); //If no games were found
     });
 }
 
@@ -164,14 +189,19 @@ function searchForGame() {
  * Creates game StateObject 
  * @returns { GameState } gameState object
  */
-function createGame() {
+async function createGame(language, privateGame) {
     return new Promise((res, rej) => {
-        axios.get(DB_SERVICE+"/text/random").then((response) => {
+        axios.get(DB_SERVICE+"/text?language="+language + "&difficulty=RANDOM").then((response) => {
             const data = response.data;
             const gameId = uuidv4();
             const newGame = new GameState(gameId, data.text);
             idToGame.set(gameId, newGame);
             waitingGames.push(newGame);
+
+            if(privateGame) {
+                newGame.type = "PRIVATE";
+            }
+
             res(newGame);
         }).catch((err) => {
             console.log("ERROR");
@@ -242,6 +272,7 @@ function handleUserLeave(socket, userId) {
         socket.send(JSON.stringify({
             type: "USER-LEAVE",
             userId: userId,
+            players: usersGame.players,
             message: "User has left the game"
         }));
     } else {
@@ -276,16 +307,16 @@ function handleUserStart(socket, userId) {
 function handleUserFinish(socket, userId) {
     const gameId = userToGame.get(userId);
     const usersGame = idToGame.get(gameId);
-    
-    //console.log(idToGame);
 
+    console.log(usersGame);
+    
     //Checking if user is in game
     if(usersGame) {
         //Checking if gameState is "RUNNING"
         if(usersGame.gameState == "RUNNING") {
             //Now we want to check if the user has already finished
             console.log(usersGame.length);
-
+            console.log(usersGame.playerStatus.get(userId));
             //Checking to see if user has finished
             if(usersGame.playerStatus.get(userId) >= usersGame.length) {
                 const place = usersGame.nextPlace++; //Getting the place and then incrementing it
@@ -319,7 +350,9 @@ function handleUserFinish(socket, userId) {
                 if(gameFinished) {
                     handleGameCleanUp(usersGame);
                 }
-            } 
+            } else {
+                console.log("USER HASN'T");
+            }
         }
     } 
 }

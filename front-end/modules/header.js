@@ -28,7 +28,7 @@ export function setUpHeader() {
     }
 
     //Looking at the user localstorage
-    const username = window.sessionStorage.getItem("username");
+    const username = window.localStorage.getItem("username");
     if(username !== null) {
         addLoginInfo(username);
     } else {

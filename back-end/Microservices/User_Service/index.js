@@ -194,12 +194,12 @@ app.get(PATH+"/email/verification", (req, res) => {
             if(err) {
                 throw new Error();
             }
-            res.redirect("http://localhost/code-racer/front-end/index.html");
+            res.redirect("http://122.58.68.153/code-racer/front-end/index.html");
             axios.get(DB_SERVICE+"/user/validate?email="+decoded.email); 
         });
     } catch(err) {
         console.log("error");
-        res.redirect("http://localhost/code-racer/front-end/error.html");
+        res.redirect("http://122.58.68.153/code-racer/front-end/error.html");
     }
 });
 
@@ -421,7 +421,7 @@ async function sendVerificationEmail(email, token) {
     const mailOptions = {
         to: email,
         subject: 'Coding Racer Email Verificaiton',
-        html: `<h3>Testing</h3><p>Click this link to verify this account: <a href="http://127.0.0.1:3051/api/user/email/verification?token=${token}">Link</a></p>`
+        html: `<h3>Testing</h3><p>Click this link to verify this account: <a href="http://122.58.68.153:3051/api/user/email/verification?token=${token}">Link</a></p>`
     }; 
 
     try {
