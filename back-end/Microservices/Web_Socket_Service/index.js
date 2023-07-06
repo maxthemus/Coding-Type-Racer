@@ -257,7 +257,7 @@ gameServiceSocket.on("message", (data) => {
                 joinGameResponse(message.gameState);
                 return;
             case "USER-LEAVE":
-                leaveGameResponse(message.userId);
+                leaveGameResponse(message.userId, message.players);
                 return;
             case "GAME-UPDATE":
                 updateGameResponse(message.gameState);
@@ -337,7 +337,7 @@ function handleUserLeaveGame(socket, userId) {
 
 
 //Function for sending a leaving game response
-function leaveGameResponse(userId) {
+function leaveGameResponse(userId, players) {
     if(ID_SOCKET.has(userId)) {
         const socket = ID_SOCKET.get(userId);
         socket.send(JSON.stringify({
@@ -345,6 +345,17 @@ function leaveGameResponse(userId) {
             message: "You have left the game!"
         }));
     }
+
+    //Sending message to everyone else to say they have left game
+    for(let index in players) {
+        if(ID_SOCKET.has(players[index])) {
+            const socket = ID_SOCKET.get(players[index]);
+            socket.send(JSON.stringify({
+                type: "USER-LEAVE",
+                player: userId
+            }));
+        }
+    } 
 }
 
 //Function for sending an update response to users in game

@@ -5,7 +5,7 @@ const SIGNUP_PAGE = "./signup.html";
 let loggedIn = false; //By default user isn't logged in
 
 //Services
-const USER_SERVICE = "http://127.0.0.1:3051/api/user";
+const USER_SERVICE = "http://122.58.68.153:3051/api/user";
 
 //Function called onload of home page
 window.addEventListener("load", handleOnLoad);
@@ -27,10 +27,10 @@ async function handleOnLoad() {
         }
     } else {
         //We want to check if user is logged in
-        if(window.sessionStorage.getItem("username") !== null) {
+        if(window.localStorage.getItem("username") !== null) {
             //Display this users information
             try {
-                const profileData = await getUserInformation(window.sessionStorage.getItem("username"));
+                const profileData = await getUserInformation(window.localStorage.getItem("username"));
                 console.log(profileData);
                 displayProfileData(profileData);
             } catch(err) {
@@ -51,7 +51,7 @@ async function handleOnLoad() {
 //Updating the user information in the header
 function updateUserInfo() {
     //Checking if username is set
-    if(window.sessionStorage.getItem("username") !== null) {
+    if(window.localStorage.getItem("username") !== null) {
         loggedIn = true;        
 
         //Making vertical alignment for drop down menu
@@ -59,7 +59,7 @@ function updateUserInfo() {
 
         //Creating drop down menu for logged in user
         const dropDownButton = document.createElement("button"); //Creating button
-        dropDownButton.innerText = window.sessionStorage.getItem("username"); //Setting button value to the users name
+        dropDownButton.innerText = window.localStorage.getItem("username"); //Setting button value to the users name
         dropDownButton.addEventListener("click", handleDropDown);
         document.getElementById("user-info").appendChild(dropDownButton);
 
@@ -139,7 +139,7 @@ function handleLogout() {
     console.log("Logging out");
 
     //Resetting user data
-    window.sessionStorage.clear(); //clearing all session data
+    window.localStorage.clear(); //clearing all session data
 
     if(window.location.href != "index.html") {
         window.location.href="./index.html"

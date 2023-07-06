@@ -1,9 +1,9 @@
 //VARIABLES
-const JOIN_URL = "http://localhost/code-racer/front-end/multiplayerGame.html";
-const USER_SERVICE = "http://localhost:3051/api/user/";
+const JOIN_URL = "http://122.58.68.153/code-racer/front-end/multiplayerGame.html";
+const USER_SERVICE = "http://122.58.68.153:3051/api/user/";
 const LOGIN_PAGE = "./login.html";
 const HOME_PAGE = "./index.html";
-const SOCKET_SERVER = "ws://127.0.0.1:3053";
+const SOCKET_SERVER = "ws://122.58.68.153:3053";
 let socket; //Socket for connecting to game server
 let inGame;
 let countFunc; //For canceling interval
@@ -13,7 +13,7 @@ let state;
 
 //Function for getting user login information
 function getUserInformation() {
-    return sessionStorage.getItem("token");
+    return window.localStorage.getItem("token");
 }
 
 //Event listener for 
@@ -31,6 +31,7 @@ function handleSocketConnected() {
     //Getting url parameters
     const url = new URL(window.location.href);
     const searchParams = url.searchParams;
+    console.log(url);
 
     if(searchParams.has("game")) {
         console.log(searchParams.get("game"));
@@ -92,6 +93,9 @@ function handleSocketMessage(event) {
                 handleJoinGame(message.gameState); 
                 return;
             case "USER-LEAVE":
+                if("player" in message) {
+                    removeUser(message.player);
+                }
                 return;
             case "USER-FINISHED":
                 handleUserFinished(message.gameState);
@@ -467,7 +471,7 @@ function addMultiplayerMenu() {
     //language queue button
     const menuQueueButton = document.createElement("button");
     menuQueueButton.id = "multiplayer-menu-queue";
-    menuQueueButton.innerText = "Langauge Queue";
+    menuQueueButton.innerText = "Language Queue";
     menuQueueButton.addEventListener("click", handleJoinGameQueue);
     menuDiv.appendChild(menuQueueButton);
 
@@ -541,6 +545,12 @@ function addQueueMenu() {
     languageSettings.id = "language-settings";
     settingsDiv.appendChild(languageSettings);
 
+    //Adding label for drop down
+    const languageLabel = document.createElement("p");
+    languageLabel.innerText = "Select Language";
+    languageLabel.id = "select-label";
+    languageSettings.appendChild(languageLabel);
+
     //Adding language selector
     addLanguageSelector(languageSettings);
 
@@ -570,6 +580,9 @@ function addQueueMenu() {
 
 function removeQueueMenu() {
     const mainDiv = document.getElementById("multiplayer-main");
+
+    document.getElementById("select-label").remove();
+
 
     //First we need to remove all settings divs    
     removeLanguageSelector();
@@ -939,7 +952,7 @@ function removeUser(userId) {
 
     //Removing progress bar
     const userState = document.getElementById(userId +"-state");
-    userState.removeChild(firstChild.remove()); 
+    userState.removeChild(userState.firstChild); 
 
     while(userRow.firstChild) {
         userRow.removeChild(userRow.firstChild);
@@ -1063,14 +1076,33 @@ function addCreateGameMenu() {
     languageSettings.id = "language-settings";
     mainDiv.appendChild(languageSettings);
 
+    //Adding label for drop down
+    const languageLabel = document.createElement("p");
+    languageLabel.innerText = "Select Language";
+    languageLabel.id = "select-label";
+    languageSettings.appendChild(languageLabel);
+
     addLanguageSelector(languageSettings);
 
-    //Creating the create Game button
-    const createButton = document.createElement("button");
-    createButton.id = "create-button";
-    createButton.innerText = "Create Game";
-    createButton.addEventListener("click", handleSendCreateGame);
-    mainDiv.appendChild(createButton);
+    //Creating div for buttons 
+    const buttonDiv = document.createElement("div");
+    buttonDiv.id = "create-buttons";
+
+    //Creating back button
+    const backButton = document.createElement("button");
+    backButton.id = "create-back-button";
+    backButton.innerText = "X";
+    backButton.addEventListener("click", handleCreateBackButton);
+    buttonDiv.appendChild(backButton);
+
+    //Join Queue button
+    const queueButton = document.createElement("button");
+    queueButton.id = "create-game-button";
+    queueButton.innerText = "Create Game";
+    queueButton.addEventListener("click", handleSendCreateGame);
+    buttonDiv.appendChild(queueButton);
+
+    mainDiv.appendChild(buttonDiv);
 
     mainDiv.classList.add("friend-styles");
 }
@@ -1078,11 +1110,19 @@ function addCreateGameMenu() {
 function removeCreateGameMenu() {
     const mainDiv = document.getElementById("multiplayer-main");
 
-    //Removing event listeners
-    document.getElementById("create-button").removeEventListener("click", handleSendCreateGame);
-
     //Removing selectors
     removeLanguageSelector();
+
+    //Now we remove event listeners from buttons
+    document.getElementById("create-game-button").removeEventListener("click", handleSendCreateGame);
+    document.getElementById("create-back-button").removeEventListener("click", handleCreateBackButton);
+
+    const buttonDiv = document.getElementById("create-buttons");
+    while(buttonDiv.firstChild) {
+        buttonDiv.removeChild(buttonDiv.firstChild);
+    }    
+
+
 
     //Removing all elements
     while(mainDiv.firstChild) {
@@ -1090,6 +1130,11 @@ function removeCreateGameMenu() {
     }
     
     mainDiv.classList.remove("friend-styles");
+}
+
+function handleCreateBackButton() {
+    removeCreateGameMenu();
+    addMultiplayerMenu();    
 }
 
 function addStartButton() {

@@ -272,6 +272,7 @@ function handleUserLeave(socket, userId) {
         socket.send(JSON.stringify({
             type: "USER-LEAVE",
             userId: userId,
+            players: usersGame.players,
             message: "User has left the game"
         }));
     } else {
